@@ -8,44 +8,37 @@
   body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
   h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
   
-  /* 入力エリア */
   .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
   .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
   input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-  #search-input { width: 220px; }
+  #search-input { width: 240px; }
   #shares { width: 80px; }
   #price { width: 90px; }
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   button.add-btn:hover { background-color: #1565c0; }
   
-  /* タイルグリッド */
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; margin-bottom: 20px; }
   
-  /* 個別のタイル */
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; }
   .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
   .title-group { display: flex; align-items: baseline; gap: 8px; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
   .tile-name { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
   
-  /* 削除ボタン（小さな黒い×） */
   .delete-btn { background-color: transparent; color: #000; border: none; font-size: 0.9em; cursor: pointer; padding: 4px; }
   .delete-btn:hover { color: #666; }
   
-  /* タイル内の行 */
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
   .tile-label { color: #7f8c8d; }
   .tile-value { font-weight: bold; }
-  .plus { color: #388e3c; } /* 緑 */
-  .minus { color: #d32f2f; } /* 赤 */
+  .plus { color: #388e3c; } 
+  .minus { color: #d32f2f; }
   
-  /* ▼詳しく見る・皮算用エリア */
   .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
   .calc-area { margin-top: 10px; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
   .target-input { width: 70px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
   
-  /* 合計エリア */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: center; gap: 20px; font-size: 14px; font-weight: bold; flex-wrap: wrap; }
 </style>
 </head>
@@ -55,7 +48,7 @@
 
 <div class="input-card">
   <div class="form-group">
-    <input type="text" id="search-input" list="meigara-list" placeholder="銘柄検索 (例: 7203 や トヨタ)">
+    <input type="text" id="search-input" list="meigara-list" placeholder="辞書を準備中...">
     <datalist id="meigara-list"></datalist>
     
     <input type="number" id="shares" step="100" placeholder="株数">
@@ -91,45 +84,59 @@
   }
 
   async function loadDictionary() {
+    const searchInput = document.getElementById('search-input');
     try {
       const response = await fetch('jpx.csv');
-      if(!response.ok) return;
+      if(!response.ok) {
+        searchInput.placeholder = "辞書が見つかりません (jpx.csv)";
+        return;
+      }
       const buffer = await response.arrayBuffer();
       
-      // Shift_JISでデコードを試み、文字化け（）があればUTF-8でやり直す対策
       let text = new TextDecoder('shift_jis').decode(buffer);
       if (text.includes('')) {
         text = new TextDecoder('utf-8').decode(buffer);
       }
       
       const lines = text.split('\n');
-      if (lines.length < 2) return;
-
-      const headers = parseCSVRow(lines[0]).map(h => h.trim());
-      
-      // 見出しの名前が少し違っても見つけられるように「部分一致」で検索する
-      const codeIdx = headers.findIndex(h => h.includes('コード'));
-      const nameIdx = headers.findIndex(h => h.includes('略称') || h.includes('銘柄名'));
-      const typeIdx = headers.findIndex(h => h.includes('商品分類'));
-      const kessan1Idx = headers.findIndex(h => h.includes('決算期') && !h.includes('中間') && !h.includes('変則'));
-      const kessan2Idx = headers.findIndex(h => h.includes('中間') || h.includes('決算期2'));
-      const kessan3Idx = headers.findIndex(h => h.includes('変則'));
-
-      // コード列が見つからなければ終了
-      if(codeIdx === -1) {
-          console.error("CSV内に「コード」という列が見つかりません:", headers);
-          return;
+      if (lines.length < 2) {
+        searchInput.placeholder = "CSVが空です";
+        return;
       }
 
+      const headers = parseCSVRow(lines[0]).map(h => h.trim().replace(/"/g, ''));
+      
+      // 商品分類や決算期は従来通りヘッダーから探す
+      let typeIdx = headers.findIndex(h => h.includes('商品分類'));
+      let kessan1Idx = headers.findIndex(h => h.includes('決算期') && !h.includes('中間') && !h.includes('変則'));
+      let kessan2Idx = headers.findIndex(h => h.includes('中間') || h.includes('決算期2'));
+      let kessan3Idx = headers.findIndex(h => h.includes('変則'));
+
       const datalist = document.getElementById('meigara-list');
+      let count = 0;
       
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const cols = parseCSVRow(lines[i]).map(c => c.trim());
-        const code = cols[codeIdx];
-        if (!code) continue;
+        const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/"/g, ''));
+        
+        // 最低でも4列目までデータがない行はスキップ
+        if (cols.length < 4) continue;
+        
+        // 2列目 (index 1) が銘柄コード
+        let rawCode = cols[1];
+        if (!rawCode) continue;
 
-        const name = nameIdx !== -1 ? cols[nameIdx] : '';
+        // 末尾の余分な「0」を削除する処理（5文字で末尾が0なら4文字にする）
+        let code = rawCode;
+        if (code.length === 5 && code.endsWith('0')) {
+          code = code.substring(0, 4);
+        }
+        
+        // 4桁の英数字（例: 7203, 285A）かチェック
+        if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
+
+        // 4列目 (index 3) が銘柄略称
+        const name = cols[3];
         
         meigaraDict[code] = {
           name: name,
@@ -142,9 +149,18 @@
         const option = document.createElement('option');
         option.value = `${code} ${name}`;
         datalist.appendChild(option);
+        count++;
       }
+
+      if (count > 0) {
+        searchInput.placeholder = `銘柄検索 (全 ${count} 件)`;
+      } else {
+        searchInput.placeholder = "有効な銘柄がありません";
+      }
+
     } catch (e) {
       console.error("辞書の読み込みエラー:", e);
+      searchInput.placeholder = "辞書の読み込みエラー";
     }
   }
 
@@ -161,16 +177,15 @@
 
   function addStock() {
     const searchVal = document.getElementById('search-input').value.trim();
-    const codeMatch = searchVal.match(/^([A-Za-z0-9]+)/);
+    const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
     
     if(!codeMatch) {
-      alert("銘柄を選択するか、コードを入力してください。");
+      alert("銘柄を選択するか、4桁のコードを入力してください。");
       return;
     }
     const code = codeMatch[1].toUpperCase();
     
     const dictData = meigaraDict[code] || {};
-    // 入力欄に名前が含まれていればそれを使い、なければ辞書、どちらもなければ未設定
     const name = dictData.name || searchVal.substring(code.length).trim() || '---';
 
     const shares = parseFloat(document.getElementById('shares').value);
