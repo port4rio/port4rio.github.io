@@ -17,7 +17,7 @@
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   button.add-btn:hover { background-color: #1565c0; }
   
-  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; margin-bottom: 20px; }
+  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
   
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; }
   .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
@@ -34,9 +34,17 @@
   .plus { color: #388e3c; } 
   .minus { color: #d32f2f; }
   
-  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; }
+  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; background: #f0f7ff; padding: 6px; border-radius: 4px; transition: 0.2s; }
+  .details-btn:hover { background: #e0f0ff; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
-  .calc-area { margin-top: 10px; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
+  
+  /* 詳細情報の1行表示レイアウト */
+  .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; text-align: center; }
+  .stat-item { display: flex; flex-direction: column; gap: 4px; }
+  .stat-label { font-size: 11px; color: #7f8c8d; }
+  .stat-value { font-weight: bold; color: #2c3e50; }
+  
+  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
   .target-input, .memo-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
   .target-input { width: 70px; text-align: right; }
   .memo-input { width: 140px; text-align: right; font-size: 12px; }
@@ -71,7 +79,7 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  // 全角英数字を半角大文字に変換する関数（検索用）
+  // 全角英数字を半角大文字にする超強力な正規化ツール
   function normalizeText(str) {
     if (!str) return '';
     return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
@@ -79,30 +87,29 @@
     }).toUpperCase();
   }
 
-  // 検索窓の高度なサジェスト制御
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', function() {
     const val = this.value.trim();
-    // 半角英数字以外（漢字・ひらがな・全角文字等）が含まれているか判定
     const hasZenkaku = /[^\x01-\x7E]/.test(val);
     const minLength = hasZenkaku ? 2 : 3;
     
     const datalist = document.getElementById('meigara-list');
-    datalist.innerHTML = ''; // 毎回リストをリセットして軽量化
+    datalist.innerHTML = ''; 
 
     if (val.length >= minLength) {
-      const query = normalizeText(val); // 入力値も半角大文字に変換して比較
+      const query = normalizeText(val); 
       let count = 0;
       
       for (const code in meigaraDict) {
         const data = meigaraDict[code];
-        // 銘柄コード、正規化名(半角大文字)、元の名前 のどれかに一致すれば候補に出す
-        if (code.includes(query) || data.normalizedName.includes(query) || data.name.includes(val)) {
+        // コード、または「正式名称＋略称」の正規化文字列のどこかに引っかかればOK
+        if (code.includes(query) || data.searchTarget.includes(query)) {
           const option = document.createElement('option');
-          option.value = `${code} ${data.name}`;
+          // サジェストの表示には「略称」を使用する
+          option.value = `${code} ${data.shortName}`;
           datalist.appendChild(option);
           count++;
-          if (count >= 100) break; // 最大100件まで（動作を軽くするため）
+          if (count >= 100) break;
         }
       }
       this.setAttribute('list', 'meigara-list');
@@ -160,14 +167,16 @@
         if (code.length === 5 && code.endsWith('0')) {
           code = code.substring(0, 4);
         }
-        
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        const name = cols[3];
-        // 検索用に正規化した名前も一緒に保存しておく
+        const fullName = cols[2]; // 3列目：正式名称（例：三菱重工業）
+        const shortName = cols[3]; // 4列目：略称（例：三菱重）
+        
         meigaraDict[code] = { 
-          name: name,
-          normalizedName: normalizeText(name) 
+          fullName: fullName,
+          shortName: shortName,
+          // 検索用に、両方の名前を合体させて半角大文字にした見えないデータを持たせる
+          searchTarget: normalizeText(fullName + shortName) 
         };
         count++;
       }
@@ -205,7 +214,8 @@
     }
     const code = codeMatch[1].toUpperCase();
     const dictData = meigaraDict[code] || {};
-    const name = dictData.name || searchVal.substring(code.length).trim() || '---';
+    // 登録時の名前は略称を優先する
+    const name = dictData.shortName || searchVal.substring(code.length).trim() || '---';
 
     const shares = parseFloat(document.getElementById('shares').value);
     const price = parseFloat(document.getElementById('price').value);
@@ -219,7 +229,7 @@
       document.getElementById('price').value = '';
       
       searchInput.removeAttribute('list');
-      document.getElementById('meigara-list').innerHTML = ''; // 登録後にリストを空にする
+      document.getElementById('meigara-list').innerHTML = ''; 
       
       renderTiles();
     } else {
@@ -237,7 +247,14 @@
 
   function toggleDetails(index) {
     const el = document.getElementById(`details-${index}`);
-    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    const btn = document.getElementById(`details-btn-${index}`);
+    if (el.style.display === 'block') {
+      el.style.display = 'none';
+      btn.innerText = '▼ 詳しく見る';
+    } else {
+      el.style.display = 'block';
+      btn.innerText = '▲ 閉じる';
+    }
   }
 
   function calcTarget(index, buyPrice, shares) {
@@ -308,18 +325,22 @@
         <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${currentPriceStr}</span></div>
         <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${changeClass}">${changeStr}</span></div>
         
-        <div class="details-btn" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
+        <div class="details-btn" id="details-btn-${index}" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
         
         <div class="details-content" id="details-${index}">
+          
+          <!-- 1行表示エリア -->
+          <div class="details-stats">
+            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${stock.price.toLocaleString()}円</span></div>
+            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${stock.shares.toLocaleString()}株</span></div>
+            <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${valueStr}</span></div>
+            <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${profitClass}">${profitStr}</span></div>
+          </div>
+          
           <div class="tile-row">
             <span class="tile-label">メモ / 決算日</span>
             <input type="text" class="memo-input" value="${memoText}" onchange="updateMemo(${index}, this.value)" placeholder="例: 5/14 15:00">
           </div>
-          <hr style="border: 0; border-top: 1px dashed #eee; margin: 8px 0;">
-          <div class="tile-row"><span class="tile-label">買値</span> <span class="tile-value">${stock.price.toLocaleString()}円</span></div>
-          <div class="tile-row"><span class="tile-label">保有株数</span> <span class="tile-value">${stock.shares.toLocaleString()}株</span></div>
-          <div class="tile-row"><span class="tile-label">評価額</span> <span class="tile-value">${valueStr}</span></div>
-          <div class="tile-row"><span class="tile-label">損益</span> <span class="tile-value ${profitClass}">${profitStr}</span></div>
           
           <div class="calc-area">
             目標株価: <input type="number" class="target-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="例: 2000"> 円
