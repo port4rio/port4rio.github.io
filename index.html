@@ -78,7 +78,6 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  // XSS対策用のエスケープ関数を追加
   function escapeHTML(str) {
     if (!str) return '';
     return str.replace(/[&'`"<>]/g, function(match) {
@@ -88,7 +87,6 @@
 
   function normalizeText(str) {
     if (!str) return '';
-    // NFKC正規化で、全角の「ＣＧＳ」等も自動的に半角の「CGS」に揃います
     let norm = str.normalize('NFKC').toUpperCase();
     norm = norm.replace(/[\u3041-\u3096]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) + 0x0060);
@@ -109,9 +107,11 @@
       
       for (const code in meigaraDict) {
         const data = meigaraDict[code];
+        // 日本語名と英語名の両方を含む searchTarget から検索
         if (code.includes(query) || data.searchTarget.includes(query)) {
           const option = document.createElement('option');
-          option.value = `${code} ${data.shortName}`;
+          // サジェスト表示は「コード 日本語名」にします
+          option.value = `${code} ${data.jpName}`;
           datalist.appendChild(option);
           count++;
           if (count >= 100) break;
@@ -146,10 +146,13 @@
       }
       const buffer = await response.arrayBuffer();
       
-      let text = new TextDecoder('shift_jis').decode(buffer);
-      // 【修正箇所】文字化け記号（）が含まれている場合のみUTF-8で再試行するように修正
-      if (text.includes('')) {
-        text = new TextDecoder('utf-8').decode(buffer);
+      let text;
+      try {
+        // 【修正箇所】まずUTF-8として「厳格に(エラーを吐く設定で)」デコードを試す
+        text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+      } catch (e) {
+        // UTF-8でエラーが出た（＝Shift_JIS特有のバイト列が含まれている）場合はShift_JISで読み込む
+        text = new TextDecoder('shift_jis').decode(buffer);
       }
       
       const lines = text.split('\n');
@@ -173,13 +176,14 @@
         }
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        const fullName = cols[2] || '';
-        const shortName = cols[3] || '';
+        const jpName = cols[2] || '';
+        const enName = cols[3] || ''; // 4列目：英文商号を追加
         
         meigaraDict[code] = { 
-          fullName: fullName,
-          shortName: shortName,
-          searchTarget: normalizeText(fullName + shortName) 
+          jpName: jpName,
+          enName: enName,
+          // 【修正箇所】日本語名と英語名を合体させてから正規化し、検索対象とする
+          searchTarget: normalizeText(jpName + " " + enName) 
         };
         count++;
       }
@@ -217,7 +221,8 @@
     }
     const code = codeMatch[1].toUpperCase();
     const dictData = meigaraDict[code] || {};
-    const name = dictData.shortName || searchVal.substring(code.length).trim() || '---';
+    // 登録時の表示名は日本語名を使用
+    const name = dictData.jpName || searchVal.substring(code.length).trim() || '---';
 
     const shares = parseFloat(document.getElementById('shares').value);
     const price = parseFloat(document.getElementById('price').value);
@@ -311,7 +316,6 @@
         profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
       }
 
-      // XSS対策としてエスケープ関数を通す
       const displayName = escapeHTML(stock.name || '---');
       const memoText = escapeHTML(stock.memo || '');
 
