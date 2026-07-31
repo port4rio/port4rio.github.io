@@ -8,12 +8,11 @@
   body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
   h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
   
-  /* 入力エリア（1行・省スペース化） */
+  /* 入力エリア（1行・辞書サジェスト対応） */
   .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
   .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
   input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-  #code { width: 90px; }
-  #name { width: 140px; }
+  #search-input { width: 220px; } /* コードと名前を1つに統合 */
   #shares { width: 80px; }
   #price { width: 90px; }
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
@@ -35,10 +34,8 @@
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
   .tile-label { color: #7f8c8d; }
   .tile-value { font-weight: bold; }
-  
-  /* 色の反転（プラス緑・マイナス赤） */
-  .plus { color: #388e3c; }
-  .minus { color: #d32f2f; }
+  .plus { color: #388e3c; } /* 緑 */
+  .minus { color: #d32f2f; } /* 赤 */
   
   /* ▼詳しく見る・皮算用エリア */
   .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; }
@@ -46,7 +43,7 @@
   .calc-area { margin-top: 10px; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
   .target-input { width: 70px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
   
-  /* 合計エリア（1行・現在値と同じ文字サイズ） */
+  /* 合計エリア */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: center; gap: 20px; font-size: 14px; font-weight: bold; flex-wrap: wrap; }
 </style>
 </head>
@@ -56,10 +53,12 @@
 
 <div class="input-card">
   <div class="form-group">
-    <input type="text" id="code" placeholder="コード (285A)">
-    <input type="text" id="name" placeholder="銘柄名 (キオクシア)">
+    <!-- 検索サジェスト用リスト（datalist）を紐付け -->
+    <input type="text" id="search-input" list="meigara-list" placeholder="銘柄検索 (例: 7203 や トヨタ)">
+    <datalist id="meigara-list"></datalist>
+    
     <input type="number" id="shares" step="100" placeholder="株数">
-    <input type="number" id="price" placeholder="買値 (円)">
+    <input type="number" id="price" placeholder="買値(円)">
     <button class="add-btn" onclick="addStock()">登録</button>
   </div>
 </div>
@@ -74,7 +73,71 @@
 <script>
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
+  let meigaraDict = {}; // JPX辞書データ
 
+  // カンマを含むCSVの行を正しく分割する関数
+  function parseCSVRow(row) {
+    let result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+      let char = row[i];
+      if (char === '"') inQuotes = !inQuotes;
+      else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
+      else current += char;
+    }
+    result.push(current);
+    return result;
+  }
+
+  // JPXのCSVを読み込んで辞書化する
+  async function loadDictionary() {
+    try {
+      const response = await fetch('jpx.csv');
+      if(!response.ok) return;
+      const buffer = await response.arrayBuffer();
+      // ※もし銘柄名が文字化けする場合は、'shift_jis' を 'utf-8' に変更してください
+      const text = new TextDecoder('shift_jis').decode(buffer);
+      const lines = text.split('\n');
+      if (lines.length < 2) return;
+
+      const headers = parseCSVRow(lines[0]).map(h => h.trim());
+      const codeIdx = headers.indexOf('銘柄コード');
+      const nameIdx = headers.indexOf('銘柄略称');
+      const typeIdx = headers.indexOf('商品分類');
+      const kessan1Idx = headers.indexOf('決算期/決算期1');
+      const kessan2Idx = headers.indexOf('中間決算期/決算期2');
+      const kessan3Idx = headers.indexOf('変則決算期');
+
+      if(codeIdx === -1) return;
+
+      const datalist = document.getElementById('meigara-list');
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const cols = parseCSVRow(lines[i]).map(c => c.trim());
+        const code = cols[codeIdx];
+        const name = nameIdx !== -1 ? cols[nameIdx] : '';
+        
+        meigaraDict[code] = {
+          name: name,
+          type: typeIdx !== -1 ? cols[typeIdx] : '',
+          kessan1: kessan1Idx !== -1 ? cols[kessan1Idx] : '',
+          kessan2: kessan2Idx !== -1 ? cols[kessan2Idx] : '',
+          kessan3: kessan3Idx !== -1 ? cols[kessan3Idx] : ''
+        };
+
+        // 検索候補に追加
+        const option = document.createElement('option');
+        option.value = `${code} ${name}`;
+        datalist.appendChild(option);
+      }
+    } catch (e) {
+      console.error("辞書の読み込みエラー:", e);
+    }
+  }
+
+  // 株価データの読み込み
   async function loadPrices() {
     try {
       const response = await fetch('prices.json');
@@ -87,23 +150,40 @@
   }
 
   function addStock() {
-    const code = document.getElementById('code').value.toUpperCase(); // 英字は自動で大文字に
-    const name = document.getElementById('name').value || '---'; // 未入力の場合は---
+    const searchVal = document.getElementById('search-input').value.trim();
+    // 入力値から先頭の英数字（銘柄コード）を抽出
+    const codeMatch = searchVal.match(/^([A-Za-z0-9]+)/);
+    
+    if(!codeMatch) {
+      alert("銘柄を選択するか、コードを入力してください。");
+      return;
+    }
+    const code = codeMatch[1].toUpperCase();
+    
+    // 辞書から詳細データを取得
+    const dictData = meigaraDict[code] || {};
+    const name = dictData.name || searchVal.substring(code.length).trim() || '---';
+
     const shares = parseFloat(document.getElementById('shares').value);
     const price = parseFloat(document.getElementById('price').value);
 
     if (code && shares && price) {
-      portfolio.push({ code, name, shares, price });
+      // 辞書データも一緒に保存
+      portfolio.push({ 
+        code, name, shares, price, 
+        type: dictData.type || '', 
+        kessan1: dictData.kessan1 || '', 
+        kessan2: dictData.kessan2 || '', 
+        kessan3: dictData.kessan3 || ''
+      });
       localStorage.setItem('portfolio', JSON.stringify(portfolio));
       
-      // 入力欄をリセット
-      document.getElementById('code').value = '';
-      document.getElementById('name').value = '';
+      document.getElementById('search-input').value = '';
       document.getElementById('shares').value = '';
       document.getElementById('price').value = '';
       renderTiles();
     } else {
-      alert("コード、株数、買値は必須です。");
+      alert("銘柄、株数、買値は必須です。");
     }
   }
 
@@ -115,13 +195,11 @@
     }
   }
 
-  // ▼詳しく見る の展開処理
   function toggleDetails(index) {
     const el = document.getElementById(`details-${index}`);
     el.style.display = (el.style.display === 'block') ? 'none' : 'block';
   }
 
-  // 皮算用の計算処理
   function calcTarget(index, buyPrice, shares) {
     const targetPrice = document.getElementById(`target-${index}`).value;
     const resultEl = document.getElementById(`target-result-${index}`);
@@ -155,29 +233,37 @@
 
       if (currentPrice !== null) {
         currentPriceStr = currentPrice.toLocaleString() + '円';
-        
         if (changeAmount !== null && changePercent !== null) {
             const sign = changeAmount > 0 ? '+' : '';
             changeStr = `${sign}${changeAmount.toLocaleString()}円 (${sign}${changePercent}%)`;
             changeClass = changeAmount > 0 ? 'plus' : (changeAmount < 0 ? 'minus' : '');
         }
-
         const value = currentPrice * stock.shares;
         const profit = (currentPrice - stock.price) * stock.shares;
         totalValue += value;
         totalProfit += profit;
-
         valueStr = value.toLocaleString() + '円';
         profitStr = (profit > 0 ? '+' : '') + profit.toLocaleString() + '円';
         profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
       }
 
+      const displayName = stock.name || '---';
+      
+      // 決算期などをまとめる
+      const typeStr = stock.type || '';
+      const kessanStr = [stock.kessan1, stock.kessan2, stock.kessan3].filter(k => k && k !== '-').join(' / ');
+      
+      let extraInfoHtml = '';
+      if (typeStr || kessanStr) {
+        extraInfoHtml = `
+          <div class="tile-row"><span class="tile-label">商品分類</span> <span class="tile-value">${typeStr || '-'}</span></div>
+          <div class="tile-row"><span class="tile-label">決算期</span> <span class="tile-value">${kessanStr || '-'}</span></div>
+          <hr style="border: 0; border-top: 1px dashed #eee; margin: 8px 0;">
+        `;
+      }
+
       const tile = document.createElement('div');
       tile.className = 'stock-tile';
-      
-      // stock.name が保存されていない古いデータへの対応
-      const displayName = stock.name || '---';
-
       tile.innerHTML = `
         <div class="tile-header">
           <div class="title-group">
@@ -192,6 +278,7 @@
         <div class="details-btn" onclick="toggleDetails(${index})">▼ 詳しく見る / 皮算用</div>
         
         <div class="details-content" id="details-${index}">
+          ${extraInfoHtml}
           <div class="tile-row"><span class="tile-label">買値</span> <span class="tile-value">${stock.price.toLocaleString()}円</span></div>
           <div class="tile-row"><span class="tile-label">保有株数</span> <span class="tile-value">${stock.shares.toLocaleString()}株</span></div>
           <div class="tile-row"><span class="tile-label">評価額</span> <span class="tile-value">${valueStr}</span></div>
@@ -212,6 +299,8 @@
     totalProfitEl.className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
   }
 
+  // 起動時に両方のデータを読み込む
+  loadDictionary();
   loadPrices();
 </script>
 
