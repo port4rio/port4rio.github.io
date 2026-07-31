@@ -38,7 +38,6 @@
   .details-btn:hover { background: #e0f0ff; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
   
-  /* 詳細情報の1行表示レイアウト */
   .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; text-align: center; }
   .stat-item { display: flex; flex-direction: column; gap: 4px; }
   .stat-label { font-size: 11px; color: #7f8c8d; }
@@ -79,19 +78,24 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  // 全角英数字を半角大文字にする超強力な正規化ツール
+  // 半角・全角、大文字・小文字をすべて「半角大文字」に揃える最強の関数
   function normalizeText(str) {
     if (!str) return '';
-    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+    // まずすべて大文字にする (cgs -> CGS, ｃｇｓ -> ＣＧＳ)
+    str = str.toUpperCase();
+    // 全角の英数字を半角にする (ＣＧＳ -> CGS, １２３ -> 123)
+    return str.replace(/[Ａ-Ｚ０-９]/g, function(s) {
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-    }).toUpperCase();
+    });
   }
 
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', function() {
     const val = this.value.trim();
-    const hasZenkaku = /[^\x01-\x7E]/.test(val);
-    const minLength = hasZenkaku ? 2 : 3;
+    
+    // 【修正点】数字のみの場合は3文字、英字や漢字が含まれれば2文字から反応
+    const isOnlyNumbers = /^[0-9]+$/.test(val);
+    const minLength = isOnlyNumbers ? 3 : 2;
     
     const datalist = document.getElementById('meigara-list');
     datalist.innerHTML = ''; 
@@ -102,10 +106,9 @@
       
       for (const code in meigaraDict) {
         const data = meigaraDict[code];
-        // コード、または「正式名称＋略称」の正規化文字列のどこかに引っかかればOK
+        // コード、または「正規化された名前」のどこかに引っかかればOK
         if (code.includes(query) || data.searchTarget.includes(query)) {
           const option = document.createElement('option');
-          // サジェストの表示には「略称」を使用する
           option.value = `${code} ${data.shortName}`;
           datalist.appendChild(option);
           count++;
@@ -169,20 +172,21 @@
         }
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        const fullName = cols[2]; // 3列目：正式名称（例：三菱重工業）
-        const shortName = cols[3]; // 4列目：略称（例：三菱重）
+        // cols[2]が未定義の場合は空文字にするエラー回避
+        const fullName = cols[2] || '';
+        const shortName = cols[3] || '';
         
         meigaraDict[code] = { 
           fullName: fullName,
           shortName: shortName,
-          // 検索用に、両方の名前を合体させて半角大文字にした見えないデータを持たせる
+          // 検索ターゲット：正式名称と略称をくっつけて半角大文字にしたもの
           searchTarget: normalizeText(fullName + shortName) 
         };
         count++;
       }
 
       if (count > 0) {
-        searchInput.placeholder = `銘柄検索 (半角3桁 / 全角2字〜)`;
+        searchInput.placeholder = `銘柄検索 (数字3桁 / 英漢字2字〜)`;
       } else {
         searchInput.placeholder = "有効な銘柄がありません";
       }
@@ -214,7 +218,6 @@
     }
     const code = codeMatch[1].toUpperCase();
     const dictData = meigaraDict[code] || {};
-    // 登録時の名前は略称を優先する
     const name = dictData.shortName || searchVal.substring(code.length).trim() || '---';
 
     const shares = parseFloat(document.getElementById('shares').value);
@@ -329,7 +332,6 @@
         
         <div class="details-content" id="details-${index}">
           
-          <!-- 1行表示エリア -->
           <div class="details-stats">
             <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${stock.price.toLocaleString()}円</span></div>
             <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${stock.shares.toLocaleString()}株</span></div>
