@@ -57,7 +57,7 @@
 
 <div class="input-card">
   <div class="form-group">
-    <input type="text" id="search-input" placeholder="辞書を準備中...">
+    <input type="search" id="search-input" placeholder="辞書を準備中..." autocomplete="off">
     <datalist id="meigara-list"></datalist>
     
     <input type="number" id="shares" step="100" placeholder="株数">
@@ -78,26 +78,28 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  // 全角/半角、ひらがな/カタカナ、大文字/小文字を統一する最強の正規化関数
+  // XSS対策用のエスケープ関数を追加
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&'`"<>]/g, function(match) {
+      return { '&': '&amp;', "'": '&#x27;', '`': '&#x60;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[match]
+    });
+  }
+
   function normalizeText(str) {
     if (!str) return '';
-    // 1. NFKC正規化で全角英数字を半角に揃える
+    // NFKC正規化で、全角の「ＣＧＳ」等も自動的に半角の「CGS」に揃います
     let norm = str.normalize('NFKC').toUpperCase();
-    // 2. ひらがなをカタカナに変換する
     norm = norm.replace(/[\u3041-\u3096]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) + 0x0060);
     });
-    // 3. スペースを削除する
     return norm.replace(/\s+/g, '');
   }
 
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', function() {
     const val = this.value.trim();
-    
-    // 全角・半角・数字問わず、2文字以上入力されたらサジェストを表示
     const minLength = 2;
-    
     const datalist = document.getElementById('meigara-list');
     datalist.innerHTML = ''; 
 
@@ -107,13 +109,12 @@
       
       for (const code in meigaraDict) {
         const data = meigaraDict[code];
-        // コード、または「正規化された名前」のどこかに引っかかればOK
         if (code.includes(query) || data.searchTarget.includes(query)) {
           const option = document.createElement('option');
           option.value = `${code} ${data.shortName}`;
           datalist.appendChild(option);
           count++;
-          if (count >= 100) break; // 動作が重くならないよう最大100件に制限
+          if (count >= 100) break;
         }
       }
       this.setAttribute('list', 'meigara-list');
@@ -146,6 +147,7 @@
       const buffer = await response.arrayBuffer();
       
       let text = new TextDecoder('shift_jis').decode(buffer);
+      // 【修正箇所】文字化け記号（）が含まれている場合のみUTF-8で再試行するように修正
       if (text.includes('')) {
         text = new TextDecoder('utf-8').decode(buffer);
       }
@@ -157,11 +159,9 @@
       }
 
       let count = 0;
-      
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/"/g, ''));
-        
         if (cols.length < 4) continue;
         
         let rawCode = cols[1];
@@ -179,7 +179,6 @@
         meigaraDict[code] = { 
           fullName: fullName,
           shortName: shortName,
-          // 検索用データとして、正式名称と略称を合体させてから徹底的に正規化
           searchTarget: normalizeText(fullName + shortName) 
         };
         count++;
@@ -312,15 +311,16 @@
         profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
       }
 
-      const displayName = stock.name || '---';
-      const memoText = stock.memo || '';
+      // XSS対策としてエスケープ関数を通す
+      const displayName = escapeHTML(stock.name || '---');
+      const memoText = escapeHTML(stock.memo || '');
 
       const tile = document.createElement('div');
       tile.className = 'stock-tile';
       tile.innerHTML = `
         <div class="tile-header">
           <div class="title-group">
-            <span class="tile-code">${stock.code}</span>
+            <span class="tile-code">${escapeHTML(stock.code)}</span>
             <span class="tile-name">${displayName}</span>
           </div>
           <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
