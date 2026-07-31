@@ -1,21 +1,21 @@
 {
     "7203": {
-        "price": 3042.0,
+        "price": 3057.0,
         "previous_close": 3126.0,
-        "change_amount": -84.0,
-        "change_percent": -2.69
+        "change_amount": -69.0,
+        "change_percent": -2.21
     },
     "9984": {
-        "price": 5295.0,
+        "price": 5260.0,
         "previous_close": 4622.0,
-        "change_amount": 673.0,
-        "change_percent": 14.56
+        "change_amount": 638.0,
+        "change_percent": 13.8
     },
     "8306": {
-        "price": 3582.0,
+        "price": 3578.0,
         "previous_close": 3525.0,
-        "change_amount": 57.0,
-        "change_percent": 1.62
+        "change_amount": 53.0,
+        "change_percent": 1.5
     },
     "285A": {
         "price": 39500.0,
@@ -24,9 +24,9 @@
         "change_percent": 2.92
     },
     "200A": {
-        "price": 4220.0,
+        "price": 4274.0,
         "previous_close": 3737.0,
-        "change_amount": 483.0,
-        "change_percent": 12.92
+        "change_amount": 537.0,
+        "change_percent": 14.37
     }
 }
