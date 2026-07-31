@@ -1,5 +1,20 @@
 {
-    "7203": 3055.0,
-    "9984": 5311.0,
-    "8306": 3591.0
+    "7203": {
+        "price": 3048.0,
+        "previous_close": 3126.0,
+        "change_amount": -78.0,
+        "change_percent": -2.5
+    },
+    "9984": {
+        "price": 5282.0,
+        "previous_close": 4622.0,
+        "change_amount": 660.0,
+        "change_percent": 14.28
+    },
+    "8306": {
+        "price": 3581.0,
+        "previous_close": 3525.0,
+        "change_amount": 56.0,
+        "change_percent": 1.59
+    }
 }
