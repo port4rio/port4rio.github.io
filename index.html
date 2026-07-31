@@ -1,208 +1,168 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マイポートフォリオ</title>
-    <style>
-        :root {
-            --plus-color: #2e7d32; /* 利益時の緑（変更） */
-            --minus-color: #d32f2f; /* 損失時の赤（変更） */
-            --bg-color: #f4f7f6;
-        }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        /* 登録フォーム */
-        .input-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .input-group { display: flex; gap: 10px; flex-wrap: wrap; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; flex: 1; min-width: 120px; font-size: 1rem; }
-        button.add-btn { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; }
-        button.add-btn:hover { background: #555; }
-
-        /* タイルレイアウト */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-
-        /* 銘柄タイル */
-        .stock-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 6px solid #ccc; position: relative; }
-        .stock-card.profit { border-left-color: var(--plus-color); }
-        .stock-card.loss { border-left-color: var(--minus-color); }
-
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .code { font-weight: bold; font-size: 1.2rem; color: #555; }
-        .price-now { font-size: 1.3rem; font-weight: bold; }
-        
-        .stats { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.85rem; color: #666; margin-bottom: 10px; }
-        .profit-value { font-size: 1.1rem; font-weight: bold; margin-top: 5px; }
-        .plus { color: var(--plus-color); }
-        .minus { color: var(--minus-color); }
-
-        /* 詳しく見る（アコーディオン） */
-        .details-btn { width: 100%; background: none; border: 1px solid #eee; padding: 8px; border-radius: 6px; cursor: pointer; color: #888; font-size: 0.8rem; margin-top: 10px; transition: background 0.2s;}
-        .details-btn:hover { background: #f9f9f9; }
-        .expanded-content { display: none; padding-top: 15px; border-top: 1px dashed #eee; margin-top: 10px; }
-        .expanded-content.show { display: block; }
-
-        /* とらぬ狸の皮算用セクション */
-        .simulation-box { background: #fffcf0; padding: 10px; border-radius: 8px; border: 1px solid #f0e6b2; margin-top: 10px; }
-        .simulation-title { font-size: 0.75rem; font-weight: bold; color: #856404; margin-bottom: 5px; display: block; }
-        .sim-input { width: calc(100% - 12px); font-size: 0.9rem; padding: 5px; margin-bottom: 5px; }
-        .sim-result { font-size: 0.9rem; font-weight: bold; margin-top: 5px; display: block; }
-
-        .delete-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ddd; cursor: pointer; font-size: 1.2rem; line-height: 1;}
-        .delete-btn:hover { color: #ff4d4d; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Portfolio</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; background-color: #f4f5f7; }
+  h1 { color: #333; }
+  .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+  th { background-color: #f8f9fa; }
+  
+  /* プラスとマイナスの文字色設定（日本の証券アプリ風） */
+  .plus { color: #d32f2f; font-weight: bold; } /* 赤 */
+  .minus { color: #388e3c; font-weight: bold; } /* 緑 */
+  
+  .form-group { margin-bottom: 10px; }
+  input { padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; }
+  button { padding: 8px 15px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  button:hover { background-color: #1565c0; }
+  .delete-btn { background-color: #d32f2f; }
+  .delete-btn:hover { background-color: #b71c1c; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h2>マイポートフォリオ</h2>
+
+<h1>📈 My Portfolio</h1>
+
+<div class="card">
+  <h3>新規登録</h3>
+  <div class="form-group">
+    <input type="text" id="code" placeholder="銘柄コード (例: 7203)">
+    <input type="number" id="shares" placeholder="株数 (例: 100)">
+    <input type="number" id="price" placeholder="買値 (例: 1500)">
+    <button onclick="addStock()">追加</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3>保有銘柄一覧</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>銘柄コード</th>
+        <th>現在値</th>
+        <th>前日比</th>
+        <th>買値</th>
+        <th>保有株数</th>
+        <th>評価額</th>
+        <th>損益</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="portfolio-body">
+      <!-- ここにデータが入る -->
+    </tbody>
+  </table>
+  <h3 style="text-align: right; margin-top: 20px;">合計評価額: <span id="total-value">0</span>円</h3>
+  <h3 style="text-align: right;">合計損益: <span id="total-profit">0</span>円</h3>
+</div>
+
+<script>
+  let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
+  let currentPrices = {};
+
+  async function loadPrices() {
+    try {
+      const response = await fetch('prices.json');
+      currentPrices = await response.json();
+      renderTable();
+    } catch (error) {
+      console.error("株価データの読み込みに失敗しました", error);
+      renderTable();
+    }
+  }
+
+  function addStock() {
+    const code = document.getElementById('code').value;
+    const shares = parseFloat(document.getElementById('shares').value);
+    const price = parseFloat(document.getElementById('price').value);
+
+    if (code && shares && price) {
+      portfolio.push({ code, shares, price });
+      localStorage.setItem('portfolio', JSON.stringify(portfolio));
+      document.getElementById('code').value = '';
+      document.getElementById('shares').value = '';
+      document.getElementById('price').value = '';
+      renderTable();
+    } else {
+      alert("すべての項目を入力してください。");
+    }
+  }
+
+  function deleteStock(index) {
+    portfolio.splice(index, 1);
+    localStorage.setItem('portfolio', JSON.stringify(portfolio));
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('portfolio-body');
+    tbody.innerHTML = '';
+    let totalValue = 0;
+    let totalProfit = 0;
+
+    portfolio.forEach((stock, index) => {
+      // 取得したJSONデータ（price, change_amount, change_percentのまとまり）
+      const stockData = currentPrices[stock.code];
+      
+      const currentPrice = stockData ? stockData.price : null;
+      const changeAmount = stockData ? stockData.change_amount : null;
+      const changePercent = stockData ? stockData.change_percent : null;
+
+      let currentPriceStr = '-';
+      let changeStr = '-';
+      let valueStr = '-';
+      let profitStr = '-';
+      let profitClass = '';
+      let changeClass = '';
+
+      if (currentPrice !== null) {
+        currentPriceStr = currentPrice.toLocaleString() + '円';
         
-        <!-- 登録フォーム -->
-        <div class="input-card">
-            <form id="portfolio-form" class="input-group">
-                <input type="text" id="code" placeholder="銘柄コード (例: 7203)" required>
-                <input type="number" id="shares" placeholder="株数" required>
-                <input type="number" id="price" placeholder="買値" required>
-                <button type="submit" class="add-btn">登録</button>
-            </form>
-        </div>
-
-        <!-- タイル表示エリア -->
-        <div id="portfolio-grid" class="grid-container">
-            <!-- JSでカードが生成されます -->
-        </div>
-    </div>
-
-    <script>
-        const STORAGE_KEY = 'my_portfolio_data';
-
-        // 🎯 [将来Pythonで置き換える部分] ダミーの現在株価データ
-        const dummyPrices = {
-            "7203": 3500, // トヨタ
-            "9984": 9000, // ソフトバンクG
-            "8306": 1500  // 三菱UFJ
-        };
-
-        function loadData() {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        // 前日比の表示組み立て
+        if (changeAmount !== null && changePercent !== null) {
+            const sign = changeAmount > 0 ? '+' : ''; // プラスなら+記号をつける
+            changeStr = `${sign}${changeAmount.toLocaleString()}円 (${sign}${changePercent}%)`;
+            changeClass = changeAmount > 0 ? 'plus' : (changeAmount < 0 ? 'minus' : '');
         }
 
-        function saveData(data) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        }
+        const value = currentPrice * stock.shares;
+        const profit = (currentPrice - stock.price) * stock.shares;
+        totalValue += value;
+        totalProfit += profit;
 
-        // 数値をカンマ区切りにする関数
-        function formatNumber(num) {
-            return num.toLocaleString();
-        }
+        valueStr = value.toLocaleString() + '円';
+        profitStr = (profit > 0 ? '+' : '') + profit.toLocaleString() + '円';
+        profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+      }
 
-        // メインの描画関数
-        function renderGrid() {
-            const data = loadData();
-            const grid = document.getElementById('portfolio-grid');
-            grid.innerHTML = '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${stock.code}</td>
+        <td>${currentPriceStr}</td>
+        <td class="${changeClass}">${changeStr}</td>
+        <td>${stock.price.toLocaleString()}円</td>
+        <td>${stock.shares.toLocaleString()}株</td>
+        <td>${valueStr}</td>
+        <td class="${profitClass}">${profitStr}</td>
+        <td><button class="delete-btn" onclick="deleteStock(${index})">削除</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
 
-            data.forEach((item, index) => {
-                // ダミーデータから現在値を取得（なければ買値と同じとする）
-                const currentPrice = dummyPrices[item.code] || item.price;
-                
-                // 損益計算
-                const profitLoss = (currentPrice - item.price) * item.shares;
-                const profitLossPercent = ((currentPrice / item.price) - 1) * 100;
-                
-                // プラスかマイナスかで色分けするクラスを決定
-                const isProfit = profitLoss >= 0;
-                const statusClass = isProfit ? 'profit' : 'loss';
-                const colorClass = isProfit ? 'plus' : 'minus';
-                const sign = isProfit ? '+' : '';
+    document.getElementById('total-value').innerText = totalValue.toLocaleString();
+    
+    const totalProfitEl = document.getElementById('total-profit');
+    totalProfitEl.innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString();
+    totalProfitEl.className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
+  }
 
-                // HTML（カード）の生成
-                const card = document.createElement('div');
-                card.className = `stock-card ${statusClass}`;
-                
-                card.innerHTML = `
-                    <button class="delete-btn" onclick="deleteItem(${index})" title="削除">×</button>
-                    <div class="header">
-                        <div class="code">${item.code}</div>
-                        <div class="price-now">${formatNumber(currentPrice)}円</div>
-                    </div>
-                    
-                    <div class="stats">
-                        <div>買値: ${formatNumber(item.price)}円</div>
-                        <div>保有: ${formatNumber(item.shares)}株</div>
-                    </div>
-                    
-                    <div class="profit-value ${colorClass}">
-                        損益: ${sign}${formatNumber(profitLoss)}円 (${sign}${profitLossPercent.toFixed(2)}%)
-                    </div>
+  loadPrices();
+</script>
 
-                    <button class="details-btn" onclick="toggleDetails(${index})">▼ 詳しく見る（皮算用）</button>
-                    
-                    <div id="details-${index}" class="expanded-content">
-                        <div class="simulation-box">
-                            <span class="simulation-title">🦊 とらぬ狸の皮算用</span>
-                            <div>もし株価が</div>
-                            <input type="number" class="sim-input" id="sim-target-${index}" value="${currentPrice}" oninput="calculateSim(${index}, ${item.price}, ${item.shares})">
-                            <div>円になったら？</div>
-                            <span class="sim-result" id="sim-result-${index}">
-                                予想損益: ${sign}${formatNumber(profitLoss)}円
-                            </span>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // アコーディオンの開閉
-        window.toggleDetails = function(index) {
-            const content = document.getElementById(`details-${index}`);
-            content.classList.toggle('show');
-        }
-
-        // 皮算用（シミュレーション）の計算処理
-        window.calculateSim = function(index, buyPrice, shares) {
-            const targetPriceInput = document.getElementById(`sim-target-${index}`).value;
-            const targetPrice = parseFloat(targetPriceInput) || 0;
-            
-            const simProfit = (targetPrice - buyPrice) * shares;
-            const simPercent = buyPrice > 0 ? ((targetPrice / buyPrice) - 1) * 100 : 0;
-            
-            const isProfit = simProfit >= 0;
-            const colorClass = isProfit ? 'plus' : 'minus';
-            const sign = isProfit ? '+' : '';
-
-            const resultSpan = document.getElementById(`sim-result-${index}`);
-            resultSpan.innerHTML = `予想損益: <span class="${colorClass}">${sign}${formatNumber(simProfit)}円 (${sign}${simPercent.toFixed(2)}%)</span>`;
-        }
-
-        // 削除処理
-        window.deleteItem = function(index) {
-            if(confirm('削除しますか？')){
-                const data = loadData();
-                data.splice(index, 1);
-                saveData(data);
-                renderGrid();
-            }
-        };
-
-        // 登録処理
-        document.getElementById('portfolio-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const code = document.getElementById('code').value;
-            const shares = parseInt(document.getElementById('shares').value, 10);
-            const price = parseFloat(document.getElementById('price').value);
-
-            const data = loadData();
-            data.push({ code: code, shares: shares, price: price });
-            saveData(data);
-            
-            renderGrid();
-            this.reset();
-        });
-
-        // 初回描画
-        renderGrid();
-    </script>
 </body>
 </html>
