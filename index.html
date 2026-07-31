@@ -148,9 +148,12 @@
       }
       const buffer = await response.arrayBuffer();
       
-      // Shift_JISでデコードし、文字化け記号（）が含まれていればUTF-8に切り替える
+      // まずShift_JISでデコードしてみる
       let text = new TextDecoder('shift_jis').decode(buffer);
-      if (text.includes('')) {
+      
+      // もしShift_JISで開いてみて、ヘッダーに「コード」や「銘柄」といった正しい日本語が含まれていなければ、
+      // おそらくファイルはUTF-8で保存されていると判断してデコードし直す
+      if (!text.includes('コード') && !text.includes('銘柄')) {
         text = new TextDecoder('utf-8').decode(buffer);
       }
       
