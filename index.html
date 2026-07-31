@@ -50,7 +50,6 @@
 
 <div class="input-card">
   <div class="form-group">
-    <!-- list属性はJavaScriptで3文字以上入力された時だけ付与します -->
     <input type="text" id="search-input" placeholder="辞書を準備中...">
     <datalist id="meigara-list"></datalist>
     
@@ -72,10 +71,40 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  // 検索窓が3文字以上になったらサジェストを表示する処理
+  // 全角英数字を半角大文字に変換する関数（検索用）
+  function normalizeText(str) {
+    if (!str) return '';
+    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    }).toUpperCase();
+  }
+
+  // 検索窓の高度なサジェスト制御
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', function() {
-    if (this.value.length >= 3) {
+    const val = this.value.trim();
+    // 半角英数字以外（漢字・ひらがな・全角文字等）が含まれているか判定
+    const hasZenkaku = /[^\x01-\x7E]/.test(val);
+    const minLength = hasZenkaku ? 2 : 3;
+    
+    const datalist = document.getElementById('meigara-list');
+    datalist.innerHTML = ''; // 毎回リストをリセットして軽量化
+
+    if (val.length >= minLength) {
+      const query = normalizeText(val); // 入力値も半角大文字に変換して比較
+      let count = 0;
+      
+      for (const code in meigaraDict) {
+        const data = meigaraDict[code];
+        // 銘柄コード、正規化名(半角大文字)、元の名前 のどれかに一致すれば候補に出す
+        if (code.includes(query) || data.normalizedName.includes(query) || data.name.includes(val)) {
+          const option = document.createElement('option');
+          option.value = `${code} ${data.name}`;
+          datalist.appendChild(option);
+          count++;
+          if (count >= 100) break; // 最大100件まで（動作を軽くするため）
+        }
+      }
       this.setAttribute('list', 'meigara-list');
     } else {
       this.removeAttribute('list');
@@ -116,7 +145,6 @@
         return;
       }
 
-      const datalist = document.getElementById('meigara-list');
       let count = 0;
       
       for (let i = 1; i < lines.length; i++) {
@@ -136,16 +164,16 @@
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
         const name = cols[3];
-        meigaraDict[code] = { name: name };
-
-        const option = document.createElement('option');
-        option.value = `${code} ${name}`;
-        datalist.appendChild(option);
+        // 検索用に正規化した名前も一緒に保存しておく
+        meigaraDict[code] = { 
+          name: name,
+          normalizedName: normalizeText(name) 
+        };
         count++;
       }
 
       if (count > 0) {
-        searchInput.placeholder = `銘柄検索 (3桁以上で候補表示)`;
+        searchInput.placeholder = `銘柄検索 (半角3桁 / 全角2字〜)`;
       } else {
         searchInput.placeholder = "有効な銘柄がありません";
       }
@@ -183,15 +211,15 @@
     const price = parseFloat(document.getElementById('price').value);
 
     if (code && shares && price) {
-      portfolio.push({ code, name, shares, price, memo: '' }); // メモ枠を初期追加
+      portfolio.push({ code, name, shares, price, memo: '' });
       localStorage.setItem('portfolio', JSON.stringify(portfolio));
       
       searchInput.value = '';
       document.getElementById('shares').value = '';
       document.getElementById('price').value = '';
       
-      // 入力後は再びサジェストが出ないようにlist属性を外す
       searchInput.removeAttribute('list');
+      document.getElementById('meigara-list').innerHTML = ''; // 登録後にリストを空にする
       
       renderTiles();
     } else {
@@ -224,7 +252,6 @@
     }
   }
 
-  // メモ欄が変更されたら保存する
   function updateMemo(index, value) {
     portfolio[index].memo = value;
     localStorage.setItem('portfolio', JSON.stringify(portfolio));
