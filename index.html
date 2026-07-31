@@ -3,64 +3,72 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Portfolio</title>
+<title>My Port4rio</title>
 <style>
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 20px; background-color: #f4f5f7; color: #333; }
-  h1 { text-align: center; color: #2c3e50; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
+  h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
   
-  /* 入力エリアのカード */
-  .input-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; text-align: center; }
-  .form-group { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-  input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; width: 150px; }
-  button.add-btn { padding: 10px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+  /* 入力エリア（1行・省スペース化） */
+  .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+  .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
+  input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+  #code { width: 90px; }
+  #name { width: 140px; }
+  #shares { width: 80px; }
+  #price { width: 90px; }
+  button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   button.add-btn:hover { background-color: #1565c0; }
   
-  /* タイル（カード）を並べるグリッド設定 */
-  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+  /* タイルグリッド */
+  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; margin-bottom: 20px; }
   
-  /* 個別のタイルデザイン */
-  .stock-tile { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-top: 4px solid #1976d2; }
-  .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-  .tile-code { font-size: 1.5em; font-weight: bold; color: #2c3e50; }
-  .delete-btn { background-color: #e53935; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
-  .delete-btn:hover { background-color: #c62828; }
+  /* 個別のタイル */
+  .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; }
+  .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
+  .title-group { display: flex; align-items: baseline; gap: 8px; }
+  .tile-code { font-size: 0.85em; color: #7f8c8d; }
+  .tile-name { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
+  .delete-btn { background-color: transparent; color: #e53935; border: none; font-size: 1.2em; font-weight: bold; cursor: pointer; padding: 0; }
+  .delete-btn:hover { color: #b71c1c; }
   
   /* タイル内の行 */
-  .tile-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+  .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
   .tile-label { color: #7f8c8d; }
   .tile-value { font-weight: bold; }
   
-  /* プラス・マイナスの色 */
-  .plus { color: #d32f2f; } /* 赤 */
-  .minus { color: #388e3c; } /* 緑 */
+  /* 色の反転（プラス緑・マイナス赤） */
+  .plus { color: #388e3c; }
+  .minus { color: #d32f2f; }
   
-  /* 合計エリア */
-  .summary-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: right; font-size: 1.2em; }
-  .summary-row { margin-bottom: 10px; }
-  .summary-value { font-size: 1.5em; font-weight: bold; margin-left: 10px; }
+  /* ▼詳しく見る・皮算用エリア */
+  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; }
+  .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
+  .calc-area { margin-top: 10px; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
+  .target-input { width: 70px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
+  
+  /* 合計エリア（1行・現在値と同じ文字サイズ） */
+  .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: center; gap: 20px; font-size: 14px; font-weight: bold; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 
-<h1>📈 My Portfolio</h1>
+<h1>📈 My Port4rio</h1>
 
 <div class="input-card">
-  <h3>新規銘柄の登録</h3>
   <div class="form-group">
-    <input type="text" id="code" placeholder="銘柄コード (例: 7203)">
-    <input type="number" id="shares" placeholder="株数 (例: 100)">
-    <input type="number" id="price" placeholder="買値 (例: 1500)">
-    <button class="add-btn" onclick="addStock()">追加する</button>
+    <input type="text" id="code" placeholder="コード (285A)">
+    <input type="text" id="name" placeholder="銘柄名 (キオクシア)">
+    <input type="number" id="shares" step="100" placeholder="株数">
+    <input type="number" id="price" placeholder="買値 (円)">
+    <button class="add-btn" onclick="addStock()">登録</button>
   </div>
 </div>
 
-<!-- ここにタイルが並びます -->
-<div id="portfolio-grid" class="portfolio-grid">
-</div>
+<div id="portfolio-grid" class="portfolio-grid"></div>
 
 <div class="summary-card">
-  <div class="summary-row">合計評価額: <span class="summary-value" id="total-value">0円</span></div>
-  <div class="summary-row">合計損益: <span class="summary-value" id="total-profit">0円</span></div>
+  <div>合計評価額: <span id="total-value">0円</span></div>
+  <div>合計損益: <span id="total-profit">0円</span></div>
 </div>
 
 <script>
@@ -69,7 +77,6 @@
 
   async function loadPrices() {
     try {
-      // GitHub Actionsで更新された prices.json を読み込む
       const response = await fetch('prices.json');
       currentPrices = await response.json();
       renderTiles();
@@ -80,19 +87,23 @@
   }
 
   function addStock() {
-    const code = document.getElementById('code').value;
+    const code = document.getElementById('code').value.toUpperCase(); // 英字は自動で大文字に
+    const name = document.getElementById('name').value || '---'; // 未入力の場合は---
     const shares = parseFloat(document.getElementById('shares').value);
     const price = parseFloat(document.getElementById('price').value);
 
     if (code && shares && price) {
-      portfolio.push({ code, shares, price });
+      portfolio.push({ code, name, shares, price });
       localStorage.setItem('portfolio', JSON.stringify(portfolio));
+      
+      // 入力欄をリセット
       document.getElementById('code').value = '';
+      document.getElementById('name').value = '';
       document.getElementById('shares').value = '';
       document.getElementById('price').value = '';
       renderTiles();
     } else {
-      alert("すべての項目を入力してください。");
+      alert("コード、株数、買値は必須です。");
     }
   }
 
@@ -101,6 +112,25 @@
       portfolio.splice(index, 1);
       localStorage.setItem('portfolio', JSON.stringify(portfolio));
       renderTiles();
+    }
+  }
+
+  // ▼詳しく見る の展開処理
+  function toggleDetails(index) {
+    const el = document.getElementById(`details-${index}`);
+    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+  }
+
+  // 皮算用の計算処理
+  function calcTarget(index, buyPrice, shares) {
+    const targetPrice = document.getElementById(`target-${index}`).value;
+    const resultEl = document.getElementById(`target-result-${index}`);
+    if (targetPrice) {
+      const profit = (targetPrice - buyPrice) * shares;
+      resultEl.innerText = `見込み利益: ${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
+      resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+    } else {
+      resultEl.innerText = '';
     }
   }
 
@@ -116,7 +146,7 @@
       const changeAmount = stockData ? stockData.change_amount : null;
       const changePercent = stockData ? stockData.change_percent : null;
 
-      let currentPriceStr = '-';
+      let currentPriceStr = '取得中...';
       let changeStr = '-';
       let valueStr = '-';
       let profitStr = '-';
@@ -142,33 +172,46 @@
         profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
       }
 
-      // タイル（カード）の生成
       const tile = document.createElement('div');
       tile.className = 'stock-tile';
+      
+      // stock.name が保存されていない古いデータへの対応
+      const displayName = stock.name || '---';
+
       tile.innerHTML = `
         <div class="tile-header">
-          <span class="tile-code">${stock.code}</span>
-          <button class="delete-btn" onclick="deleteStock(${index})">削除</button>
+          <div class="title-group">
+            <span class="tile-code">${stock.code}</span>
+            <span class="tile-name">${displayName}</span>
+          </div>
+          <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
         </div>
         <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${currentPriceStr}</span></div>
         <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${changeClass}">${changeStr}</span></div>
-        <hr style="border: 0; border-top: 1px dashed #eee; margin: 12px 0;">
-        <div class="tile-row"><span class="tile-label">買値</span> <span class="tile-value">${stock.price.toLocaleString()}円</span></div>
-        <div class="tile-row"><span class="tile-label">保有株数</span> <span class="tile-value">${stock.shares.toLocaleString()}株</span></div>
-        <div class="tile-row"><span class="tile-label">評価額</span> <span class="tile-value">${valueStr}</span></div>
-        <div class="tile-row"><span class="tile-label">損益</span> <span class="tile-value ${profitClass}">${profitStr}</span></div>
+        
+        <div class="details-btn" onclick="toggleDetails(${index})">▼ 詳しく見る / 皮算用</div>
+        
+        <div class="details-content" id="details-${index}">
+          <div class="tile-row"><span class="tile-label">買値</span> <span class="tile-value">${stock.price.toLocaleString()}円</span></div>
+          <div class="tile-row"><span class="tile-label">保有株数</span> <span class="tile-value">${stock.shares.toLocaleString()}株</span></div>
+          <div class="tile-row"><span class="tile-label">評価額</span> <span class="tile-value">${valueStr}</span></div>
+          <div class="tile-row"><span class="tile-label">損益</span> <span class="tile-value ${profitClass}">${profitStr}</span></div>
+          
+          <div class="calc-area">
+            目標株価: <input type="number" class="target-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="例: 2000"> 円
+            <div id="target-result-${index}" style="margin-top: 4px; font-weight: bold;"></div>
+          </div>
+        </div>
       `;
       grid.appendChild(tile);
     });
 
-    // 合計の更新
     document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
     const totalProfitEl = document.getElementById('total-profit');
     totalProfitEl.innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
-    totalProfitEl.className = 'summary-value ' + (totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : ''));
+    totalProfitEl.className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
   }
 
-  // 初回読み込み
   loadPrices();
 </script>
 
