@@ -8,6 +8,7 @@
   body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
   h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
   
+  /* 入力エリア */
   .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
   .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
   input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
@@ -17,14 +18,17 @@
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   button.add-btn:hover { background-color: #1565c0; }
   
+  /* タイルグリッド */
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
   
+  /* 個別のタイル */
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; }
   .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
   .title-group { display: flex; align-items: baseline; gap: 8px; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
   .tile-name { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
   
+  /* 削除ボタン（小さな黒い×） */
   .delete-btn { background-color: transparent; color: #000; border: none; font-size: 0.9em; cursor: pointer; padding: 4px; }
   .delete-btn:hover { color: #666; }
   
@@ -34,20 +38,23 @@
   .plus { color: #388e3c; } 
   .minus { color: #d32f2f; }
   
+  /* ▼詳しく見る・皮算用エリア */
   .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; background: #f0f7ff; padding: 6px; border-radius: 4px; transition: 0.2s; }
   .details-btn:hover { background: #e0f0ff; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
   
-  .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; text-align: center; }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-label { font-size: 11px; color: #7f8c8d; }
+  /* 詳細情報の1行表示レイアウト */
+  .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; text-align: center; }
+  .stat-item { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .stat-label { font-size: 10px; color: #7f8c8d; }
   .stat-value { font-weight: bold; color: #2c3e50; }
   
-  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center; font-size: 13px; }
-  .target-input, .memo-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-  .target-input { width: 70px; text-align: right; }
-  .memo-input { width: 140px; text-align: right; font-size: 12px; }
+  .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
+  .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between;}
+  .calc-row:last-child { margin-bottom: 0; }
+  .target-input { width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
   
+  /* 合計エリア */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: center; gap: 20px; font-size: 14px; font-weight: bold; flex-wrap: wrap; }
 </style>
 </head>
@@ -57,11 +64,11 @@
 
 <div class="input-card">
   <div class="form-group">
-    <input type="search" id="search-input" placeholder="辞書を準備中..." autocomplete="off">
+    <input type="text" id="search-input" placeholder="辞書を準備中...">
     <datalist id="meigara-list"></datalist>
     
-    <input type="number" id="shares" step="100" placeholder="株数">
-    <input type="number" id="price" placeholder="買値(円)">
+    <input type="number" id="shares" step="100" placeholder="株数(任意)">
+    <input type="number" id="price" placeholder="買値(任意)">
     <button class="add-btn" onclick="addStock()">登録</button>
   </div>
 </div>
@@ -78,51 +85,7 @@
   let currentPrices = {};
   let meigaraDict = {};
 
-  function escapeHTML(str) {
-    if (!str) return '';
-    return str.replace(/[&'`"<>]/g, function(match) {
-      return { '&': '&amp;', "'": '&#x27;', '`': '&#x60;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[match]
-    });
-  }
-
-  function normalizeText(str) {
-    if (!str) return '';
-    let norm = str.normalize('NFKC').toUpperCase();
-    norm = norm.replace(/[\u3041-\u3096]/g, function(match) {
-      return String.fromCharCode(match.charCodeAt(0) + 0x0060);
-    });
-    return norm.replace(/\s+/g, '');
-  }
-
-  const searchInput = document.getElementById('search-input');
-  searchInput.addEventListener('input', function() {
-    const val = this.value.trim();
-    const minLength = 2;
-    const datalist = document.getElementById('meigara-list');
-    datalist.innerHTML = ''; 
-
-    if (val.length >= minLength) {
-      const query = normalizeText(val); 
-      let count = 0;
-      
-      for (const code in meigaraDict) {
-        const data = meigaraDict[code];
-        // 日本語名と英語名の両方を含む searchTarget から検索
-        if (code.includes(query) || data.searchTarget.includes(query)) {
-          const option = document.createElement('option');
-          // サジェスト表示は「コード 日本語名」にします
-          option.value = `${code} ${data.jpName}`;
-          datalist.appendChild(option);
-          count++;
-          if (count >= 100) break;
-        }
-      }
-      this.setAttribute('list', 'meigara-list');
-    } else {
-      this.removeAttribute('list');
-    }
-  });
-
+  // CSVの行パース用
   function parseCSVRow(row) {
     let result = [];
     let current = '';
@@ -137,6 +100,45 @@
     return result;
   }
 
+  // 大文字小文字の区別をなくすため（ひらがなカタカナ・全半角はそのまま）
+  function normalizeForSearch(str) {
+      return str ? str.toUpperCase() : '';
+  }
+
+  const searchInput = document.getElementById('search-input');
+  searchInput.addEventListener('input', function() {
+    const val = this.value.trim();
+    const minLength = 2; // 2文字以上でサジェスト
+    
+    const datalist = document.getElementById('meigara-list');
+    datalist.innerHTML = ''; 
+
+    if (val.length >= minLength) {
+      const query = normalizeForSearch(val); 
+      let count = 0;
+      
+      for (const code in meigaraDict) {
+        const data = meigaraDict[code];
+        // コード、名称(2)、略称(3)、英文商号(4)のいずれかにマッチするか
+        if (
+            code.includes(query) || 
+            data.searchName.includes(query) || 
+            data.searchShortName.includes(query) || 
+            data.searchEngName.includes(query)
+        ) {
+          const option = document.createElement('option');
+          option.value = `${code} ${data.shortName}`; // サジェスト表示はコードと略称
+          datalist.appendChild(option);
+          count++;
+          if (count >= 100) break; 
+        }
+      }
+      this.setAttribute('list', 'meigara-list');
+    } else {
+      this.removeAttribute('list');
+    }
+  });
+
   async function loadDictionary() {
     try {
       const response = await fetch('jpx.csv');
@@ -146,13 +148,9 @@
       }
       const buffer = await response.arrayBuffer();
       
-      let text;
-      try {
-        // 【修正箇所】まずUTF-8として「厳格に(エラーを吐く設定で)」デコードを試す
-        text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
-      } catch (e) {
-        // UTF-8でエラーが出た（＝Shift_JIS特有のバイト列が含まれている）場合はShift_JISで読み込む
-        text = new TextDecoder('shift_jis').decode(buffer);
+      let text = new TextDecoder('shift_jis').decode(buffer);
+      if (text.includes('')) {
+        text = new TextDecoder('utf-8').decode(buffer);
       }
       
       const lines = text.split('\n');
@@ -162,28 +160,34 @@
       }
 
       let count = 0;
+      
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/"/g, ''));
-        if (cols.length < 4) continue;
         
-        let rawCode = cols[1];
+        // 5列目（インデックス4: 英文商号）まで取得するため
+        if (cols.length < 5) continue;
+        
+        let rawCode = cols[1]; // 2列目: コード
         if (!rawCode) continue;
 
+        // 末尾の0を削除 (例: 72030 -> 7203)
         let code = rawCode;
         if (code.length === 5 && code.endsWith('0')) {
           code = code.substring(0, 4);
         }
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        const jpName = cols[2] || '';
-        const enName = cols[3] || ''; // 4列目：英文商号を追加
+        const name = cols[2] || '';       // 3列目: 銘柄名称
+        const shortName = cols[3] || '';  // 4列目: 銘柄略称
+        const engName = cols[4] || '';    // 5列目: 英文商号
         
         meigaraDict[code] = { 
-          jpName: jpName,
-          enName: enName,
-          // 【修正箇所】日本語名と英語名を合体させてから正規化し、検索対象とする
-          searchTarget: normalizeText(jpName + " " + enName) 
+          shortName: shortName,
+          // 検索用に大文字化したものを持たせる
+          searchName: normalizeForSearch(name),
+          searchShortName: normalizeForSearch(shortName),
+          searchEngName: normalizeForSearch(engName)
         };
         count++;
       }
@@ -221,14 +225,16 @@
     }
     const code = codeMatch[1].toUpperCase();
     const dictData = meigaraDict[code] || {};
-    // 登録時の表示名は日本語名を使用
-    const name = dictData.jpName || searchVal.substring(code.length).trim() || '---';
+    const name = dictData.shortName || searchVal.substring(code.length).trim() || '---';
 
-    const shares = parseFloat(document.getElementById('shares').value);
-    const price = parseFloat(document.getElementById('price').value);
+    // 株数・買値は空欄でもOKとする
+    const sharesVal = document.getElementById('shares').value;
+    const priceVal = document.getElementById('price').value;
+    const shares = sharesVal ? parseFloat(sharesVal) : null;
+    const price = priceVal ? parseFloat(priceVal) : null;
 
-    if (code && shares && price) {
-      portfolio.push({ code, name, shares, price, memo: '' });
+    if (code) {
+      portfolio.push({ code, name, shares, price });
       localStorage.setItem('portfolio', JSON.stringify(portfolio));
       
       searchInput.value = '';
@@ -236,11 +242,11 @@
       document.getElementById('price').value = '';
       
       searchInput.removeAttribute('list');
-      document.getElementById('meigara-list').innerHTML = ''; 
+      if(document.getElementById('meigara-list')){
+          document.getElementById('meigara-list').innerHTML = ''; 
+      }
       
       renderTiles();
-    } else {
-      alert("銘柄、株数、買値は必須です。");
     }
   }
 
@@ -264,21 +270,46 @@
     }
   }
 
+  // 目標株価の計算 (1行表示用)
   function calcTarget(index, buyPrice, shares) {
     const targetPrice = document.getElementById(`target-${index}`).value;
     const resultEl = document.getElementById(`target-result-${index}`);
+    
+    if (!shares || !buyPrice) {
+        resultEl.innerText = '株数・買値が未設定です';
+        resultEl.className = '';
+        return;
+    }
+
     if (targetPrice) {
       const profit = (targetPrice - buyPrice) * shares;
-      resultEl.innerText = `見込み利益: ${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
+      resultEl.innerText = `${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
       resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
     } else {
-      resultEl.innerText = '';
+      resultEl.innerText = '- 円';
+      resultEl.className = '';
     }
   }
 
-  function updateMemo(index, value) {
-    portfolio[index].memo = value;
-    localStorage.setItem('portfolio', JSON.stringify(portfolio));
+  // 買い増し計算 (1行表示用)
+  function calcAverage(index, currentBuyPrice, currentShares) {
+      const addShares = parseFloat(document.getElementById(`add-shares-${index}`).value);
+      const addPrice = parseFloat(document.getElementById(`add-price-${index}`).value);
+      const resultEl = document.getElementById(`add-result-${index}`);
+
+      if (!currentShares || !currentBuyPrice) {
+          resultEl.innerText = '元データが未設定です';
+          return;
+      }
+
+      if (addShares && addPrice) {
+          const totalCost = (currentBuyPrice * currentShares) + (addPrice * addShares);
+          const totalShares = currentShares + addShares;
+          const avgPrice = totalCost / totalShares;
+          resultEl.innerText = `${avgPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 円`;
+      } else {
+          resultEl.innerText = '- 円';
+      }
   }
 
   function renderTiles() {
@@ -307,24 +338,29 @@
             changeStr = `${sign}${changeAmount.toLocaleString()}円 (${sign}${changePercent}%)`;
             changeClass = changeAmount > 0 ? 'plus' : (changeAmount < 0 ? 'minus' : '');
         }
-        const value = currentPrice * stock.shares;
-        const profit = (currentPrice - stock.price) * stock.shares;
-        totalValue += value;
-        totalProfit += profit;
-        valueStr = value.toLocaleString() + '円';
-        profitStr = (profit > 0 ? '+' : '') + profit.toLocaleString() + '円';
-        profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+        
+        // 株数と買値が設定されている場合のみ計算
+        if (stock.shares && stock.price) {
+            const value = currentPrice * stock.shares;
+            const profit = (currentPrice - stock.price) * stock.shares;
+            totalValue += value;
+            totalProfit += profit;
+            valueStr = value.toLocaleString() + '円';
+            profitStr = (profit > 0 ? '+' : '') + profit.toLocaleString() + '円';
+            profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+        }
       }
 
-      const displayName = escapeHTML(stock.name || '---');
-      const memoText = escapeHTML(stock.memo || '');
+      const displayName = stock.name || '---';
+      const displayShares = stock.shares ? `${stock.shares.toLocaleString()}株` : '-';
+      const displayPrice = stock.price ? `${stock.price.toLocaleString()}円` : '-';
 
       const tile = document.createElement('div');
       tile.className = 'stock-tile';
       tile.innerHTML = `
         <div class="tile-header">
           <div class="title-group">
-            <span class="tile-code">${escapeHTML(stock.code)}</span>
+            <span class="tile-code">${stock.code}</span>
             <span class="tile-name">${displayName}</span>
           </div>
           <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
@@ -337,20 +373,22 @@
         <div class="details-content" id="details-${index}">
           
           <div class="details-stats">
-            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${stock.price.toLocaleString()}円</span></div>
-            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${stock.shares.toLocaleString()}株</span></div>
+            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${displayPrice}</span></div>
+            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${displayShares}</span></div>
             <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${valueStr}</span></div>
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${profitClass}">${profitStr}</span></div>
           </div>
           
-          <div class="tile-row">
-            <span class="tile-label">メモ / 決算日</span>
-            <input type="text" class="memo-input" value="${memoText}" onchange="updateMemo(${index}, this.value)" placeholder="例: 5/14 15:00">
-          </div>
-          
           <div class="calc-area">
-            目標株価: <input type="number" class="target-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="例: 2000"> 円
-            <div id="target-result-${index}" style="margin-top: 4px; font-weight: bold;"></div>
+            <div class="calc-row">
+                <span>目標: <input type="number" class="target-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price || 0}, ${stock.shares || 0})" placeholder="円"></span>
+                <span>利益: <span id="target-result-${index}" style="font-weight: bold;">- 円</span></span>
+            </div>
+            <div class="calc-row">
+                <span>追加: <input type="number" class="target-input" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price || 0}, ${stock.shares || 0})" placeholder="株">
+                <input type="number" class="target-input" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price || 0}, ${stock.shares || 0})" placeholder="円"></span>
+                <span>平均: <span id="add-result-${index}" style="font-weight: bold;">- 円</span></span>
+            </div>
           </div>
         </div>
       `;
