@@ -281,11 +281,20 @@
 
         const meta = result.meta;
         const currentPrice = meta.regularMarketPrice;
-        const prevClose = meta.chartPreviousClose || meta.previousClose;
+        
+        // 5日分の終値データから「前営業日の終値」を正確に算出
+        const closes = result.indicators?.quote?.[0]?.close?.filter(v => v !== null && v !== undefined) || [];
+        let prevClose = null;
+        if (closes.length >= 2) {
+          // 配列の最後から2番目が前営業日の終値
+          prevClose = closes[closes.length - 2];
+        } else if (meta.previousClose !== undefined) {
+          prevClose = meta.previousClose;
+        }
         
         let changeAmount = null;
         let changePercent = null;
-        if (currentPrice !== undefined && prevClose !== undefined) {
+        if (currentPrice !== undefined && prevClose) {
           changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
