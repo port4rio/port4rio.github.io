@@ -203,7 +203,8 @@ data.searchAll.includes(query)
       } else {
         searchInput.placeholder = "有効な銘柄がありません";
       }
-
+console.log("銘柄数", Object.keys(meigaraDict).length);
+console.log(meigaraDict["7013"]);
     } catch (e) {
       console.error("辞書の読み込みエラー:", e);
       searchInput.placeholder = "辞書の読み込みエラー";
