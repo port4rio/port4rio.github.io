@@ -64,8 +64,12 @@
 
 <div class="input-card">
   <div class="form-group">
-    <input type="text" id="search-input" placeholder="辞書を準備中...">
-    <datalist id="meigara-list"></datalist>
+    <input
+      type="text"
+      id="search-input"
+      list="meigara-list"
+      placeholder="辞書を準備中..."
+    >
     
     <input type="number" id="shares" step="100" placeholder="株数(任意)">
     <input type="number" id="price" placeholder="買値(任意)">
@@ -132,9 +136,9 @@ data.searchAll.includes(query)
           if (count >= 100) break; 
         }
       }
-      this.setAttribute('list', 'meigara-list');
+
     } else {
-      this.removeAttribute('list');
+
     }
   });
 
