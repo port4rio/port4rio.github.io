@@ -123,10 +123,7 @@
         const data = meigaraDict[code];
         // コード、名称(2)、略称(3)、英文商号(4)のいずれかにマッチするか
         if (
-            code.includes(query) || 
-            data.searchName.includes(query) || 
-            data.searchShortName.includes(query) || 
-            data.searchEngName.includes(query)
+data.searchAll.includes(query)
         ) {
           const option = document.createElement('option');
           option.value = `${code} ${data.shortName}`; // サジェスト表示はコードと略称
@@ -188,12 +185,15 @@
         const shortName = cols[3] || '';  // 4列目: 銘柄略称
         const engName = cols[4] || '';    // 5列目: 英文商号
         
-        meigaraDict[code] = { 
+        meigaraDict[code] = {
           shortName: shortName,
-          // 検索用に大文字化したものを持たせる
-          searchName: normalizeForSearch(name),
-          searchShortName: normalizeForSearch(shortName),
-          searchEngName: normalizeForSearch(engName)
+
+          searchAll: normalizeForSearch(
+            code + " " +
+            name + " " +
+            shortName + " " +
+            engName
+          )
         };
         count++;
       }
@@ -208,14 +208,6 @@
       console.error("辞書の読み込みエラー:", e);
       searchInput.placeholder = "辞書の読み込みエラー";
     }
-if (code === "7013") {
-    alert(
-        "code=" + code +
-        "\nname=" + name +
-        "\nshortName=" + shortName +
-        "\nengName=" + engName
-    );
-}
   }
 
   async function loadPrices() {
