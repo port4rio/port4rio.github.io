@@ -100,9 +100,13 @@
     return result;
   }
 
-  // 大文字小文字の区別をなくすため（ひらがなカタカナ・全半角はそのまま）
+  // 大文字小文字の区別をなくし、全角英数字を半角に統一して検索しやすくする
   function normalizeForSearch(str) {
-      return str ? str.toUpperCase() : '';
+      if (!str) return '';
+      // 大文字に変換後、全角英数字を半角に変換する
+      return str.toUpperCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+          return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
   }
 
   const searchInput = document.getElementById('search-input');
