@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Port4rio</title>
 <style>
-  /* 基本スタイル */
   body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
   h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
   
@@ -13,11 +12,9 @@
   .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; position: relative; }
   input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
   
-  /* 検索入力コンテナとカスタムサジェストリストの配置 */
   .search-container { position: relative; width: 240px; }
   #search-input { width: 100%; box-sizing: border-box; }
   
-  /* カスタムドロップダウンリスト (datalistの代わり) */
   .suggest-box {
     position: absolute;
     top: 100%;
@@ -55,7 +52,6 @@
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
   .tile-name { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
   
-  /* 削除ボタン（小さな黒い×） */
   .delete-btn { background-color: transparent; color: #000; border: none; font-size: 0.9em; cursor: pointer; padding: 4px; }
   .delete-btn:hover { color: #666; }
   
@@ -63,7 +59,6 @@
   .tile-label { color: #7f8c8d; }
   .tile-value { font-weight: bold; }
   
-  /* 損益のカラーリング (!importantで着色保証) */
   .plus { color: #388e3c !important; } 
   .minus { color: #d32f2f !important; }
   
@@ -71,22 +66,28 @@
   .details-btn:hover { background: #e0f0ff; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
   
-  /* 詳細情報の1行表示レイアウト */
   .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center; }
   .stat-item { display: flex; flex-direction: column; gap: 4px; }
   .stat-label { font-size: 12px; color: #7f8c8d; }
   .stat-value { font-size: 13px; font-weight: bold; color: #2c3e50; }
   
-  /* 計算エリアの1行表示レイアウト */
   .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
   .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; }
   
-  .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: center; gap: 20px; font-size: 14px; font-weight: bold; flex-wrap: wrap; }
+  .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 14px; font-weight: bold; }
+  .summary-stats { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  
+  .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: normal; }
+  .reload-btn:hover { background-color: #1565c0; }
+  
+  #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 </style>
 </head>
 <body>
 
 <h1>📈 My Port4rio</h1>
+
+<div id="toast"></div>
 
 <div class="input-card">
   <div class="form-group">
@@ -104,25 +105,32 @@
 <div id="portfolio-grid" class="portfolio-grid"></div>
 
 <div class="summary-card">
-  <div>合計評価額: <span id="total-value">0円</span></div>
-  <div>合計損益: <span id="total-profit">0円</span></div>
+  <div class="summary-stats">
+    <div>合計評価額: <span id="total-value">0円</span></div>
+    <div>合計損益: <span id="total-profit">0円</span></div>
+  </div>
+  <button class="reload-btn" onclick="refreshAllPrices()">🔄 株価を最新に更新</button>
 </div>
 
 <script>
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
+  let pricesLoaded = false;
 
-  // 全角/半角、ひらがな/カタカナ、大文字/小文字、スペースをすべて統一する正規化関数
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+
   function normalizeForSearch(str) {
     if (!str) return '';
-    // 1. スペース（全角・半角）をすべて削除し、大文字に統一
     str = str.replace(/[\s　]+/g, '').toUpperCase();
-    // 2. 全角英数字を半角英数字に変換
     str = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     });
-    // 3. ひらがなをカタカナに変換（とよた → トヨタ）
     str = str.replace(/[\u3041-\u3096]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) + 0x0060);
     });
@@ -132,19 +140,16 @@
   const searchInput = document.getElementById('search-input');
   const suggestBox = document.getElementById('suggest-box');
 
-  // カスタムサジェスト表示ロジック
   searchInput.addEventListener('input', function() {
     const val = this.value.trim();
     suggestBox.innerHTML = '';
 
-    // 数値か文字を2文字以上入れたらサジェストを表示
     if (val.length >= 2) {
       const query = normalizeForSearch(val); 
       let count = 0;
       
       for (const code in meigaraDict) {
         const d = meigaraDict[code];
-        // コード、名称(3列目)、略称(4列目)、英文商号(5列目)のいずれかにヒットすればOK
         if (code.includes(query) || 
             d.searchName.includes(query) || 
             d.searchShortName.includes(query) || 
@@ -154,7 +159,6 @@
           item.className = 'suggest-item';
           item.innerText = `${code} ${d.shortName}`;
           
-          // 候補選択時の処理
           item.onclick = function() {
             searchInput.value = `${code} ${d.shortName}`;
             suggestBox.style.display = 'none';
@@ -162,7 +166,7 @@
           
           suggestBox.appendChild(item);
           count++;
-          if (count >= 100) break; // 動作が重くならないよう最大100件に制限
+          if (count >= 100) break;
         }
       }
       
@@ -176,7 +180,6 @@
     }
   });
 
-  // 入力欄の外側をクリックしたらサジェスト一覧を閉じる
   document.addEventListener('click', function(e) {
     if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) {
       suggestBox.style.display = 'none';
@@ -206,9 +209,7 @@
       }
       const buffer = await response.arrayBuffer();
       
-      // Shift_JISでデコード
       let text = new TextDecoder('shift_jis').decode(buffer);
-      // 文字化け対策（もし「コード」や「銘柄」などの日本語が含まれていなければUTF-8でやり直す）
       if (!text.includes('コード') && !text.includes('銘柄')) {
         text = new TextDecoder('utf-8').decode(buffer);
       }
@@ -220,29 +221,24 @@
       }
 
       let count = 0;
-      
-      // 1行目(見出し)はスキップし、データ行から読み込む
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/^"|"$/g, ''));
         
-        // コード列（2列目 = index 1）が存在しない場合はスキップ
         if (cols.length < 2) continue;
         
         let rawCode = cols[1];
         if (!rawCode) continue;
 
-        // 末尾の余分な0を削除
         let code = rawCode;
         if (code.length === 5 && code.endsWith('0')) {
           code = code.substring(0, 4);
         }
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        // 列番号を固定指定
-        const name = cols[2] || '';         // 3列目: 銘柄名称
-        const shortName = cols[3] || name;  // 4列目: 銘柄略称
-        const engName = cols[4] || '';      // 5列目: 英文商号
+        const name = cols[2] || '';
+        const shortName = cols[3] || name;
+        const engName = cols[4] || '';
         
         meigaraDict[code] = { 
           shortName: shortName,
@@ -265,23 +261,83 @@
     }
   }
 
+  // ブラウザ直接でYahoo Financeからリアルタイム株価を取得する関数
+  async function fetchOnlinePrice(code) {
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d`;
+    
+    // パブリックCORSプロキシリスト
+    const proxies = [
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    ];
+
+    for (let getProxyUrl of proxies) {
+      try {
+        const res = await fetch(getProxyUrl(targetUrl));
+        if (!res.ok) continue;
+        const data = await res.json();
+        const result = data?.chart?.result?.[0];
+        if (!result) continue;
+
+        const meta = result.meta;
+        const currentPrice = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || meta.previousClose;
+        
+        let changeAmount = null;
+        let changePercent = null;
+        if (currentPrice !== undefined && prevClose !== undefined) {
+          changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
+          changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
+        }
+
+        return {
+          price: currentPrice,
+          change_amount: changeAmount,
+          change_percent: changePercent
+        };
+      } catch (e) {
+        console.warn(`Proxy fetch failed for ${code}:`, e);
+      }
+    }
+    return null;
+  }
+
   async function loadPrices() {
+    // 静的prices.jsonがある場合は先に読み込む
     try {
       const response = await fetch('prices.json');
-      currentPrices = await response.json();
-      renderTiles();
+      if (response.ok) {
+        currentPrices = await response.json();
+      }
     } catch (error) {
-      console.error("株価データの読み込みに失敗しました", error);
-      renderTiles();
+      console.log("prices.json の読み込みをスキップしました");
+    }
+    
+    pricesLoaded = true;
+    renderTiles();
+    
+    // 登録中の全銘柄についてオンラインで最新価格を取得
+    refreshAllPrices();
+  }
+
+  async function refreshAllPrices() {
+    if (portfolio.length === 0) return;
+    
+    for (let stock of portfolio) {
+      const data = await fetchOnlinePrice(stock.code);
+      if (data) {
+        currentPrices[stock.code] = data;
+        renderTiles();
+      }
     }
   }
 
-  function addStock() {
+  async function addStock() {
     const searchVal = searchInput.value.trim();
     const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
     
     if(!codeMatch) {
-      alert("銘柄を選択するか、4桁のコードを入力してください。");
+      showToast("銘柄を選択するか、4桁のコードを入力してください。");
       return;
     }
     const code = codeMatch[1].toUpperCase();
@@ -290,7 +346,6 @@
 
     const sharesVal = document.getElementById('shares').value;
     const priceVal = document.getElementById('price').value;
-    // 株数と買値は空欄でも登録可能（空欄の場合は 0 として扱う）
     const shares = sharesVal ? parseFloat(sharesVal) : 0;
     const price = priceVal ? parseFloat(priceVal) : 0;
 
@@ -303,17 +358,24 @@
       document.getElementById('price').value = '';
       
       suggestBox.style.display = 'none';
-      
+      showToast(`${code} ${name} を登録しました`);
       renderTiles();
+
+      // 追加した銘柄の株価を即座にFetch
+      const onlineData = await fetchOnlinePrice(code);
+      if (onlineData) {
+        currentPrices[code] = onlineData;
+        renderTiles();
+      }
     }
   }
 
   function deleteStock(index) {
-    if(confirm("この銘柄を削除しますか？")) {
-      portfolio.splice(index, 1);
-      localStorage.setItem('portfolio', JSON.stringify(portfolio));
-      renderTiles();
-    }
+    const stock = portfolio[index];
+    portfolio.splice(index, 1);
+    localStorage.setItem('portfolio', JSON.stringify(portfolio));
+    showToast(`${stock.code} を削除しました`);
+    renderTiles();
   }
 
   function toggleDetails(index) {
