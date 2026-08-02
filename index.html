@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<!-- ▼スマホで適切なサイズで表示するための超重要タグ▼ -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Port4rio</title>
 <style>
@@ -11,12 +10,13 @@
     background-color: #f4f6f9;
     color: #333;
     margin: 0;
-    padding: 15px; /* スマホ向けに少し余白をスリムに */
+    padding: 15px;
   }
   h1 { text-align: center; color: #2c3e50; font-size: 1.5em; }
   
   .ai-news-container { background: linear-gradient(135deg, #f0f7ff, #e6f0fa); border-left: 5px solid #1976d2; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
-  .ai-news-container h2 { margin-top: 0; font-size: 1.1em; color: #1976d2; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .ai-news-container h2 { margin-top: 0; font-size: 1.1em; color: #1976d2; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .ai-news-toggle { font-size: 0.8em; color: #666; cursor: pointer; font-weight: normal; padding: 4px; }
   .ai-news-card { background: #fff; padding: 12px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   .ai-news-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; font-size: 0.9em; }
   .ai-news-code { font-weight: bold; color: #2c3e50; display: flex; align-items: center; gap: 8px; }
@@ -40,12 +40,17 @@
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
-  .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; }
-  .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
-  .title-group { display: flex; align-items: baseline; gap: 8px; }
+  .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; }
+  
+  .tile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
+  .title-group { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
   .tile-name { font-size: 1.1em; font-weight: bold; color: #2c3e50; }
-  .delete-btn { background: transparent; border: none; font-size: 1em; cursor: pointer; padding: 4px; }
+  .color-dot { font-size: 0.9em; margin-right: 2px; }
+  
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; }
+  .delete-btn { background: transparent; border: none; font-size: 1.1em; cursor: pointer; padding: 0 0 4px 4px; line-height: 1; }
+  .schedule-info { font-size: 10px; color: #d32f2f; font-weight: bold; text-align: right; line-height: 1.2; margin-top: 2px; }
   
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
   .tile-label { color: #7f8c8d; }
@@ -60,18 +65,22 @@
   .stat-label { font-size: 11px; color: #7f8c8d; }
   .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; }
   
-  /* ▼ 修正: 1行表示＆横スクロール ▼ */
+  /* ▼ 修正: 計算欄のコンパクト化と折り返し ▼ */
   .calc-area { 
     background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; 
-    gap: 6px; font-size: 12px; margin-bottom: 6px; 
-    flex-wrap: nowrap; overflow-x: auto; white-space: nowrap;
+    gap: 4px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; 
   }
-  .calc-area::-webkit-scrollbar { display: none; } /* スクロールバーを隠す */
-  .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
+  .calc-input { padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
   
-  .summary-card { background: #fff; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 14px; font-weight: bold; }
-  .summary-stats { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-  .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 12px; }
+  /* ▼ 円グラフ＆サマリーレイアウト ▼ */
+  .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .summary-content { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  .pie-chart { width: 90px; height: 90px; border-radius: 50%; background: conic-gradient(#eee 0 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  .summary-stats { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: bold; align-items: flex-start; }
+  .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 12px; margin-top: 4px; width: 100%; cursor: pointer;}
+  
+  .disclaimer { font-size: 10px; color: #999; text-align: center; margin-top: 40px; margin-bottom: 20px; line-height: 1.5; }
+  
   #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; }
 </style>
 </head>
@@ -81,7 +90,10 @@
 <div id="toast"></div>
 
 <div id="ai-news-container" class="ai-news-container">
-  <h2>✨ AI決算サマリー</h2>
+  <h2>
+    <span style="display:flex; align-items:center; gap:6px;">✨ AI決算サマリー</span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▲ 閉じる</span>
+  </h2>
   <div id="ai-news-list"></div>
 </div>
 
@@ -100,21 +112,32 @@
 <div id="portfolio-grid" class="portfolio-grid"></div>
 
 <div class="summary-card">
-  <div class="summary-stats">
-    <div>合計評価額: <span id="total-value">0円</span></div>
-    <div>合計損益: <span id="total-profit">0円</span></div>
+  <div class="summary-content">
+    <div id="pie-chart" class="pie-chart" title="評価額の内訳"></div>
+    <div class="summary-stats">
+      <div>合計評価額: <span id="total-value">0円</span></div>
+      <div>合計損益: <span id="total-profit">0円</span></div>
+      <button class="reload-btn" onclick="refreshAllPrices(true)">🔄 株価を最新に更新</button>
+    </div>
   </div>
-  <button class="reload-btn" onclick="refreshAllPrices(true)">🔄 株価を最新に更新</button>
+</div>
+
+<div class="disclaimer">
+  ※当サイトの情報は参考であり、投資の最終判断は自己責任でお願いします。<br>
+  取得している株価・決算予定・AI要約等の正確性は保証されません。
 </div>
 
 <script>
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
-  let upcomingSchedule = {}; // 新規: スケジュールデータ保存用
+  let upcomingSchedule = {};
   
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
+  
+  // 円グラフと銘柄名のドットに使うカラーパレット
+  const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
   function showToast(msg) {
     const toast = document.getElementById('toast');
@@ -213,6 +236,19 @@
     if (forceRefresh) showToast("完了しました");
   }
 
+  // AIニュースの表示切り替え
+  function toggleAINews() {
+    const list = document.getElementById('ai-news-list');
+    const toggle = document.getElementById('ai-news-toggle');
+    if (list.style.display === 'none') {
+      list.style.display = 'block';
+      toggle.innerText = '▲ 閉じる';
+    } else {
+      list.style.display = 'none';
+      toggle.innerText = '▼ 開く';
+    }
+  }
+
   async function loadAINews() {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
@@ -272,19 +308,23 @@
     const res = document.getElementById(`avg-result-${index}`);
     if (sVal && pVal) {
       const ts = buyShares + parseFloat(sVal);
-      if (ts > 0) res.innerText = `平均: ${(((buyPrice * buyShares) + (parseFloat(pVal) * parseFloat(sVal))) / ts).toFixed(1).replace(/\.0$/, '')}円`;
-      else res.innerText = `平均: - 円`;
-    } else res.innerText = `平均: - 円`;
+      if (ts > 0) res.innerText = `平均 ${(((buyPrice * buyShares) + (parseFloat(pVal) * parseFloat(sVal))) / ts).toFixed(1).replace(/\.0$/, '')}円`;
+      else res.innerText = `平均 - 円`;
+    } else res.innerText = `平均 - 円`;
   }
 
   function renderTiles() {
     const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
     let totalValue = 0, totalProfit = 0;
+    
+    // 円グラフ計算用
+    let pieData = [];
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
       const hasCost = stock.shares > 0 && stock.price > 0;
       let cPrice = '取得中...', cStr = '-', vStr = '-', pStr = '-', pClass = '', cClass = '';
+      const color = pColors[index % pColors.length]; // 銘柄固有の色を割り当て
 
       if (stockData && stockData.price !== null) {
         cPrice = stockData.price.toLocaleString() + '円';
@@ -298,23 +338,30 @@
             totalValue += val; totalProfit += prof;
             vStr = val.toLocaleString() + '円'; pStr = (prof > 0 ? '+' : '') + prof.toLocaleString() + '円';
             pClass = prof > 0 ? 'plus' : (prof < 0 ? 'minus' : '');
+            
+            // 評価額が0以上なら円グラフのデータに追加
+            if (val > 0) pieData.push({ name: stock.name, val: val, color: color });
         }
       }
 
-      // ▼ 新規追加: スケジュールのお知らせ表示 ▼
       let scheduleHtml = '';
       const scheduleInfo = upcomingSchedule[stock.code];
       if (scheduleInfo) {
-        scheduleHtml = `<div style="font-size:11px; color:#d32f2f; font-weight:bold; margin-bottom:8px;">
-          📢 ${stock.code} ${stock.name} ${scheduleInfo.date} (${scheduleInfo.time})決算発表予定
-        </div>`;
+        scheduleHtml = `<div class="schedule-info">${scheduleInfo.date}(${scheduleInfo.time})<br>決算発表予定</div>`;
       }
 
       const tile = document.createElement('div'); tile.className = 'stock-tile';
       tile.innerHTML = `
-        <div class="tile-header"><div class="title-group"><span class="tile-code">${stock.code}</span><span class="tile-name">${stock.name||'---'}</span></div>
-        <button class="delete-btn" onclick="deleteStock(${index})">✕</button></div>
-        ${scheduleHtml}
+        <div class="tile-header">
+          <div class="title-group">
+            <span class="tile-code">${stock.code}</span>
+            <span class="tile-name"><span class="color-dot" style="color:${color};">●</span>${stock.name||'---'}</span>
+          </div>
+          <div class="header-right">
+            <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
+            ${scheduleHtml}
+          </div>
+        </div>
         <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${cPrice}</span></div>
         <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${cClass}">${cStr}</span></div>
         <div class="details-btn" id="details-btn-${index}" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
@@ -326,25 +373,48 @@
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
           <div class="calc-area">
-            目標株価: <input type="number" class="calc-input" style="width: 60px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
-            <span id="target-result-${index}" style="font-weight: bold; margin-left: 5px;">利益: -</span>
+            目標: <input type="number" class="calc-input" style="width: 75px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
+            <span id="target-result-${index}" style="font-weight: bold; margin-left: auto;">利益: -</span>
           </div>
           <div class="calc-area">
-            追加で <input type="number" class="calc-input" style="width: 50px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})"> 株を
-            <input type="number" class="calc-input" style="width: 60px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})"> 円で買うと
-            ⇒ <span id="avg-result-${index}" style="font-weight: bold; color: #1976d2;">平均: - 円</span>
+            <input type="number" class="calc-input" style="width: 75px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">株を
+            <input type="number" class="calc-input" style="width: 75px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">円で買増すと
+            <span id="avg-result-${index}" style="font-weight: bold; color: #1976d2; margin-left: auto;">平均 - 円</span>
           </div>
         </div>`;
       grid.appendChild(tile);
     });
+    
+    // 合計金額の更新
     document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
     document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
     document.getElementById('total-profit').className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
+    
+    // 円グラフの描画
+    const pieChart = document.getElementById('pie-chart');
+    if (totalValue > 0 && pieData.length > 0) {
+      pieData.sort((a, b) => b.val - a.val); // 評価額が大きい順に並び替え
+      let gradientStr = [];
+      let cumulativePercent = 0;
+      let tooltipLines = [];
+      
+      pieData.forEach(item => {
+        let percent = (item.val / totalValue) * 100;
+        gradientStr.push(`${item.color} ${cumulativePercent}% ${cumulativePercent + percent}%`);
+        tooltipLines.push(`${item.name}: ${item.val.toLocaleString()}円 (${percent.toFixed(1)}%)`);
+        cumulativePercent += percent;
+      });
+      
+      pieChart.style.background = `conic-gradient(${gradientStr.join(', ')})`;
+      pieChart.title = "【評価額の内訳】\n" + tooltipLines.join('\n'); // ホバー時のテキスト
+    } else {
+      pieChart.style.background = `conic-gradient(#eee 0 100%)`;
+      pieChart.title = "銘柄を登録すると内訳グラフが表示されます";
+    }
   }
 
   async function init() {
     await loadDictionary();
-    // ▼ 新規追加: 決算スケジュールの読み込み ▼
     try {
       const res = await fetch('schedule.json?t=' + new Date().getTime());
       if (res.ok) upcomingSchedule = await res.json();
