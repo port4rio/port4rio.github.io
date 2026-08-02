@@ -42,15 +42,17 @@
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; }
   
-  .tile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
+  /* ▼ 修正: ヘッダーの高さ固定と、右側の絶対配置 ▼ */
+  .tile-header { position: relative; min-height: 44px; display: flex; justify-content: flex-start; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; padding-right: 70px; }
   .title-group { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
-  .tile-name { font-size: 1.1em; font-weight: bold; color: #2c3e50; }
+  .tile-name { font-size: 1.1em; font-weight: bold; color: #2c3e50; line-height: 1.3; }
   .color-dot { font-size: 0.9em; margin-right: 2px; }
   
-  .header-right { display: flex; flex-direction: column; align-items: flex-end; }
-  .delete-btn { background: transparent; border: none; font-size: 1.1em; cursor: pointer; padding: 0 0 4px 4px; line-height: 1; }
-  .schedule-info { font-size: 10px; color: #d32f2f; font-weight: bold; text-align: right; line-height: 1.2; margin-top: 2px; }
+  .header-right { position: absolute; top: -4px; right: 0; display: flex; flex-direction: column; align-items: flex-end; }
+  .delete-btn { background: transparent; border: none; font-size: 12px; color: #999; cursor: pointer; padding: 4px; line-height: 1; }
+  .delete-btn:hover { color: #333; }
+  .schedule-info { font-size: 10px; color: #ff9800; font-weight: bold; text-align: right; line-height: 1.3; margin-top: 2px; }
   
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
   .tile-label { color: #7f8c8d; }
@@ -65,14 +67,10 @@
   .stat-label { font-size: 11px; color: #7f8c8d; }
   .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; }
   
-  /* ▼ 修正: 計算欄のコンパクト化と折り返し ▼ */
-  .calc-area { 
-    background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; 
-    gap: 4px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; 
-  }
-  .calc-input { padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
+  /* ▼ 修正: 計算欄を昨日のバージョンに戻す ▼ */
+  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; }
   
-  /* ▼ 円グラフ＆サマリーレイアウト ▼ */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   .summary-content { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
   .pie-chart { width: 90px; height: 90px; border-radius: 50%; background: conic-gradient(#eee 0 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
@@ -136,7 +134,6 @@
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
   
-  // 円グラフと銘柄名のドットに使うカラーパレット
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
   function showToast(msg) {
@@ -236,7 +233,6 @@
     if (forceRefresh) showToast("完了しました");
   }
 
-  // AIニュースの表示切り替え
   function toggleAINews() {
     const list = document.getElementById('ai-news-list');
     const toggle = document.getElementById('ai-news-toggle');
@@ -289,42 +285,65 @@
   }
 
   function deleteStock(index) { portfolio.splice(index, 1); localStorage.setItem('portfolio', JSON.stringify(portfolio)); renderTiles(); loadAINews(); }
+  
   function toggleDetails(index) {
     const el = document.getElementById(`details-${index}`); const btn = document.getElementById(`details-btn-${index}`);
     if (el.style.display === 'block') { el.style.display = 'none'; btn.innerText = '▼ 詳しく見る'; }
     else { el.style.display = 'block'; btn.innerText = '▲ 閉じる'; }
   }
 
+  // ▼ 指定いただいた目標株価の計算ロジック（昨日のバージョン） ▼
   function calcTarget(index, buyPrice, shares) {
-    const val = document.getElementById(`target-${index}`).value; const res = document.getElementById(`target-result-${index}`);
-    if (val && buyPrice > 0 && shares > 0) {
-      const profit = (val - buyPrice) * shares;
-      res.innerText = `利益: ${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`; res.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
-    } else { res.innerText = '利益: -'; res.className = ''; }
+    const targetPrice = document.getElementById(`target-${index}`).value;
+    const resultEl = document.getElementById(`target-result-${index}`);
+    
+    if (!shares || !buyPrice) {
+        resultEl.innerText = '株数・買値が未設定です';
+        resultEl.className = '';
+        return;
+    }
+
+    if (targetPrice) {
+      const profit = (targetPrice - buyPrice) * shares;
+      resultEl.innerText = `${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
+      resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+    } else {
+      resultEl.innerText = '-';
+      resultEl.className = '';
+    }
   }
 
-  function calcAverage(index, buyPrice, buyShares) {
-    const sVal = document.getElementById(`add-shares-${index}`).value; const pVal = document.getElementById(`add-price-${index}`).value;
-    const res = document.getElementById(`avg-result-${index}`);
-    if (sVal && pVal) {
-      const ts = buyShares + parseFloat(sVal);
-      if (ts > 0) res.innerText = `平均 ${(((buyPrice * buyShares) + (parseFloat(pVal) * parseFloat(sVal))) / ts).toFixed(1).replace(/\.0$/, '')}円`;
-      else res.innerText = `平均 - 円`;
-    } else res.innerText = `平均 - 円`;
+  // ▼ 指定いただいた買い増し計算ロジック（昨日のバージョン） ▼
+  function calcAverage(index, currentBuyPrice, currentShares) {
+      const addShares = parseFloat(document.getElementById(`add-shares-${index}`).value);
+      const addPrice = parseFloat(document.getElementById(`add-price-${index}`).value);
+      const resultEl = document.getElementById(`add-result-${index}`);
+
+      if (!currentShares || !currentBuyPrice) {
+          resultEl.innerText = '元データが未設定です';
+          return;
+      }
+
+      if (addShares && addPrice) {
+          const totalCost = (currentBuyPrice * currentShares) + (addPrice * addShares);
+          const totalShares = currentShares + addShares;
+          const avgPrice = totalCost / totalShares;
+          resultEl.innerText = `${avgPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 円`;
+      } else {
+          resultEl.innerText = '-';
+      }
   }
 
   function renderTiles() {
     const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
     let totalValue = 0, totalProfit = 0;
-    
-    // 円グラフ計算用
     let pieData = [];
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
       const hasCost = stock.shares > 0 && stock.price > 0;
       let cPrice = '取得中...', cStr = '-', vStr = '-', pStr = '-', pClass = '', cClass = '';
-      const color = pColors[index % pColors.length]; // 銘柄固有の色を割り当て
+      const color = pColors[index % pColors.length];
 
       if (stockData && stockData.price !== null) {
         cPrice = stockData.price.toLocaleString() + '円';
@@ -338,8 +357,6 @@
             totalValue += val; totalProfit += prof;
             vStr = val.toLocaleString() + '円'; pStr = (prof > 0 ? '+' : '') + prof.toLocaleString() + '円';
             pClass = prof > 0 ? 'plus' : (prof < 0 ? 'minus' : '');
-            
-            // 評価額が0以上なら円グラフのデータに追加
             if (val > 0) pieData.push({ name: stock.name, val: val, color: color });
         }
       }
@@ -373,40 +390,36 @@
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
           <div class="calc-area">
-            目標: <input type="number" class="calc-input" style="width: 75px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
-            <span id="target-result-${index}" style="font-weight: bold; margin-left: auto;">利益: -</span>
+            目標株価: <input type="number" class="calc-input" style="width: 70px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="例: 2000"> 円
+            <span style="font-weight: bold; margin-left: 5px;">見込み利益: <span id="target-result-${index}">-</span></span>
           </div>
           <div class="calc-area">
-            <input type="number" class="calc-input" style="width: 75px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">株を
-            <input type="number" class="calc-input" style="width: 75px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">円で買増すと
-            <span id="avg-result-${index}" style="font-weight: bold; color: #1976d2; margin-left: auto;">平均 - 円</span>
+            追加で <input type="number" class="calc-input" style="width: 60px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="株数"> 株を
+            <input type="number" class="calc-input" style="width: 70px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="買値"> 円で買うと
+            ⇒ <span style="font-weight: bold; color: #1976d2;">平均単価: <span id="add-result-${index}">-</span></span>
           </div>
         </div>`;
       grid.appendChild(tile);
     });
     
-    // 合計金額の更新
     document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
     document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
     document.getElementById('total-profit').className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
     
-    // 円グラフの描画
     const pieChart = document.getElementById('pie-chart');
     if (totalValue > 0 && pieData.length > 0) {
-      pieData.sort((a, b) => b.val - a.val); // 評価額が大きい順に並び替え
+      pieData.sort((a, b) => b.val - a.val);
       let gradientStr = [];
       let cumulativePercent = 0;
       let tooltipLines = [];
-      
       pieData.forEach(item => {
         let percent = (item.val / totalValue) * 100;
         gradientStr.push(`${item.color} ${cumulativePercent}% ${cumulativePercent + percent}%`);
         tooltipLines.push(`${item.name}: ${item.val.toLocaleString()}円 (${percent.toFixed(1)}%)`);
         cumulativePercent += percent;
       });
-      
       pieChart.style.background = `conic-gradient(${gradientStr.join(', ')})`;
-      pieChart.title = "【評価額の内訳】\n" + tooltipLines.join('\n'); // ホバー時のテキスト
+      pieChart.title = "【評価額の内訳】\n" + tooltipLines.join('\n');
     } else {
       pieChart.style.background = `conic-gradient(#eee 0 100%)`;
       pieChart.title = "銘柄を登録すると内訳グラフが表示されます";
