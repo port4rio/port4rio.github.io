@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- ▼スマホで適切なサイズで表示するための超重要タグ▼ -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Port4rio</title>
 <style>
   body {
@@ -9,174 +11,79 @@
     background-color: #f4f6f9;
     color: #333;
     margin: 0;
-    padding: 20px;
+    padding: 15px; /* スマホ向けに少し余白をスリムに */
   }
-  h1 { text-align: center; color: #2c3e50; }
+  h1 { text-align: center; color: #2c3e50; font-size: 1.5em; }
   
-  /* --- 新規追加: AIニュース用のデザイン --- */
-  .ai-news-container {
-    background: linear-gradient(135deg, #f0f7ff, #e6f0fa);
-    border-left: 5px solid #1976d2;
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    display: none; /* データが無い時は隠す */
-  }
-  .ai-news-container h2 {
-    margin-top: 0;
-    font-size: 1.1em;
-    color: #1976d2;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-  .ai-news-card {
-    background: #fff;
-    padding: 12px;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  }
-  .ai-news-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
-    font-size: 0.9em;
-  }
-  .ai-news-code {
-    font-weight: bold;
-    color: #2c3e50;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .badge-owned {
-    background: #ff9800;
-    color: #fff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.75em;
-  }
+  .ai-news-container { background: linear-gradient(135deg, #f0f7ff, #e6f0fa); border-left: 5px solid #1976d2; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
+  .ai-news-container h2 { margin-top: 0; font-size: 1.1em; color: #1976d2; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .ai-news-card { background: #fff; padding: 12px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .ai-news-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; font-size: 0.9em; }
+  .ai-news-code { font-weight: bold; color: #2c3e50; display: flex; align-items: center; gap: 8px; }
+  .badge-owned { background: #ff9800; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; }
   .ai-news-date { color: #7f8c8d; font-size: 0.85em; }
   .ai-news-title { font-weight: bold; font-size: 1em; margin-bottom: 8px; color: #333; }
   .ai-news-summary { font-size: 0.9em; color: #444; line-height: 1.6; white-space: pre-wrap; }
-  .ai-news-link {
-    display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none;
-  }
-  .ai-news-link:hover { text-decoration: underline; }
-  /* ---------------------------------------- */
-
-  .input-card {
-    background: #fff;
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: center;
-  }
-  .form-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+  .ai-news-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none; }
   
-  input[type="text"], input[type="number"] {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  .search-container {
-    position: relative;
-    width: 240px;
-  }
-  #search-input { width: 100%; box-sizing: border-box; }
+  .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: center; }
+  .form-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%; justify-content: center;}
   
-  .suggest-box {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    display: none;
-  }
-  .suggest-item {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 13px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .suggest-item:hover { background-color: #e0f0ff; }
-
+  input[type="text"], input[type="number"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+  .search-container { position: relative; width: 100%; max-width: 240px; }
+  #search-input { width: 100%; }
+  .suggest-box { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+  .suggest-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  
   #shares { width: 80px; }
-  #price { width: 90px; }
+  #price { width: 100px; }
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
-  button.add-btn:hover { background-color: #1565c0; }
   
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
-  
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; }
   .tile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; }
   .title-group { display: flex; align-items: baseline; gap: 8px; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; }
-  .tile-name { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
-  
-  .delete-btn { background-color: transparent; color: #000; border: none; font-size: 0.9em; cursor: pointer; padding: 4px; }
-  .delete-btn:hover { color: #666; }
+  .tile-name { font-size: 1.1em; font-weight: bold; color: #2c3e50; }
+  .delete-btn { background: transparent; border: none; font-size: 1em; cursor: pointer; padding: 4px; }
   
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
   .tile-label { color: #7f8c8d; }
   .tile-value { font-weight: bold; }
+  .plus { color: #388e3c !important; } .minus { color: #d32f2f !important; }
   
-  .plus { color: #388e3c !important; } 
-  .minus { color: #d32f2f !important; }
-  
-  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; user-select: none; background: #f0f7ff; padding: 6px; border-radius: 4px; transition: 0.2s; }
-  .details-btn:hover { background: #e0f0ff; }
+  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; background: #f0f7ff; padding: 6px; border-radius: 4px; }
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
   
   .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center; }
   .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-label { font-size: 12px; color: #7f8c8d; }
-  .stat-value { font-size: 13px; font-weight: bold; color: #2c3e50; }
+  .stat-label { font-size: 11px; color: #7f8c8d; }
+  .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; }
   
-  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
-  .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; }
+  /* ▼ 修正: 1行表示＆横スクロール ▼ */
+  .calc-area { 
+    background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; 
+    gap: 6px; font-size: 12px; margin-bottom: 6px; 
+    flex-wrap: nowrap; overflow-x: auto; white-space: nowrap;
+  }
+  .calc-area::-webkit-scrollbar { display: none; } /* スクロールバーを隠す */
+  .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
   
-  .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 14px; font-weight: bold; }
+  .summary-card { background: #fff; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 14px; font-weight: bold; }
   .summary-stats { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-  
-  .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: normal; }
-  .reload-btn:hover { background-color: #1565c0; }
-  
-  #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 12px; }
+  #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; }
 </style>
 </head>
 <body>
 
 <h1>📈 My Port4rio</h1>
-
 <div id="toast"></div>
 
-<!-- 新規追加: AI決算サマリー表示枠 -->
 <div id="ai-news-container" class="ai-news-container">
-  <h2>✨ AI決算サマリー (本日)</h2>
+  <h2>✨ AI決算サマリー</h2>
   <div id="ai-news-list"></div>
 </div>
-<!-- ここまで -->
 
 <div class="input-card">
   <div class="form-group">
@@ -184,7 +91,6 @@
       <input type="text" id="search-input" placeholder="辞書を準備中..." autocomplete="off">
       <div id="suggest-box" class="suggest-box"></div>
     </div>
-    
     <input type="number" id="shares" step="100" placeholder="株数">
     <input type="number" id="price" placeholder="買値(円)">
     <button class="add-btn" onclick="addStock()">登録</button>
@@ -205,434 +111,249 @@
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
+  let upcomingSchedule = {}; // 新規: スケジュールデータ保存用
   
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
 
   function showToast(msg) {
     const toast = document.getElementById('toast');
-    toast.innerText = msg;
-    toast.style.display = 'block';
+    toast.innerText = msg; toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
 
   function normalizeForSearch(str) {
     if (!str) return '';
-    str = str.replace(/[\s ]+/g, '').toUpperCase();
-    str = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
-      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-    });
-    str = str.replace(/[\u3041-\u3096]/g, function(match) {
-      return String.fromCharCode(match.charCodeAt(0) + 0x0060);
-    });
-    return str;
+    return str.replace(/[\s ]+/g, '').toUpperCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x0060));
   }
 
   const searchInput = document.getElementById('search-input');
   const suggestBox = document.getElementById('suggest-box');
 
   searchInput.addEventListener('input', function() {
-    const val = this.value.trim();
-    suggestBox.innerHTML = '';
-
+    const val = this.value.trim(); suggestBox.innerHTML = '';
     if (val.length >= 2) {
-      const query = normalizeForSearch(val); 
-      let count = 0;
-      
+      const query = normalizeForSearch(val); let count = 0;
       for (const code in meigaraDict) {
         const d = meigaraDict[code];
-        if (code.includes(query) || 
-            d.searchName.includes(query) || 
-            d.searchShortName.includes(query) || 
-            d.searchEngName.includes(query)) {
-            
+        if (code.includes(query) || d.searchName.includes(query) || d.searchShortName.includes(query)) {
           const item = document.createElement('div');
-          item.className = 'suggest-item';
-          item.innerText = `${code} ${d.shortName}`;
-          
-          item.onclick = function() {
-            searchInput.value = `${code} ${d.shortName}`;
-            suggestBox.style.display = 'none';
-          };
-          
-          suggestBox.appendChild(item);
-          count++;
+          item.className = 'suggest-item'; item.innerText = `${code} ${d.shortName}`;
+          item.onclick = function() { searchInput.value = `${code} ${d.shortName}`; suggestBox.style.display = 'none'; };
+          suggestBox.appendChild(item); count++;
           if (count >= 100) break;
         }
       }
       suggestBox.style.display = count > 0 ? 'block' : 'none';
-    } else {
-      suggestBox.style.display = 'none';
-    }
+    } else { suggestBox.style.display = 'none'; }
   });
 
-  document.addEventListener('click', function(e) {
-    if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) {
-      suggestBox.style.display = 'none';
-    }
-  });
-
-  function parseCSVRow(row) {
-    let result = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < row.length; i++) {
-      let char = row[i];
-      if (char === '"') inQuotes = !inQuotes;
-      else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
-      else current += char;
-    }
-    result.push(current);
-    return result;
-  }
+  document.addEventListener('click', e => { if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) suggestBox.style.display = 'none'; });
 
   async function loadDictionary() {
     try {
       const response = await fetch('jpx.csv');
-      if(!response.ok) { searchInput.placeholder = "辞書が見つかりません"; return; }
+      if(!response.ok) return;
       const buffer = await response.arrayBuffer();
       let text = new TextDecoder('shift_jis').decode(buffer);
-      if (!text.includes('コード') && !text.includes('銘柄')) {
-        text = new TextDecoder('utf-8').decode(buffer);
-      }
+      if (!text.includes('コード')) text = new TextDecoder('utf-8').decode(buffer);
       
       const lines = text.split('\n');
-      if (lines.length < 2) return;
-
-      let count = 0;
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/^"|"$/g, ''));
-        if (cols.length < 2) continue;
-        
-        let rawCode = cols[1];
-        if (!rawCode) continue;
-
-        let code = rawCode;
+        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        let code = cols[1]; if (!code) continue;
         if (code.length === 5 && code.endsWith('0')) code = code.substring(0, 4);
-        if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
-
-        meigaraDict[code] = { 
-          shortName: cols[3] || cols[2] || '',
-          searchName: normalizeForSearch(cols[2] || ''),
-          searchShortName: normalizeForSearch(cols[3] || cols[2] || ''),
-          searchEngName: normalizeForSearch(cols[4] || '')
-        };
-        count++;
+        meigaraDict[code] = { shortName: cols[3]||cols[2]||'', searchName: normalizeForSearch(cols[2]||''), searchShortName: normalizeForSearch(cols[3]||cols[2]||'') };
       }
-      searchInput.placeholder = count > 0 ? "銘柄検索 (2文字以上で候補表示)" : "有効な銘柄がありません";
-    } catch (e) {
-      searchInput.placeholder = "辞書の読み込みエラー";
-    }
+      searchInput.placeholder = "銘柄検索 (2文字以上)";
+    } catch (e) { searchInput.placeholder = "辞書読込エラー"; }
   }
 
   async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
-
     if (!forceRefresh && cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData);
-        if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data;
-      } catch (e) {}
+      try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
-
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d`;
-    const proxies = [
-      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-    ];
-
+    const proxies = [ url => `https://corsproxy.io/?${encodeURIComponent(url)}`, url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` ];
     for (let getProxyUrl of proxies) {
       try {
-        const now = Date.now();
-        const elapsed = now - lastNetworkRequestTime;
-        if (elapsed < 1000) {
-          await new Promise(r => setTimeout(r, 1000 - elapsed));
-        }
+        const elapsed = Date.now() - lastNetworkRequestTime;
+        if (elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
         lastNetworkRequestTime = Date.now();
-
         const res = await fetch(getProxyUrl(targetUrl));
         if (!res.ok) continue;
         const data = await res.json();
-        const result = data?.chart?.result?.[0];
-        if (!result) continue;
-
-        const meta = result.meta;
-        const currentPrice = meta.regularMarketPrice;
-        
-        const closes = result.indicators?.quote?.[0]?.close?.filter(v => v !== null && v !== undefined) || [];
-        let prevClose = null;
-        if (closes.length >= 2) prevClose = closes[closes.length - 2];
-        else if (meta.previousClose !== undefined) prevClose = meta.previousClose;
-        
-        let changeAmount = null; let changePercent = null;
-        if (currentPrice !== undefined && prevClose) {
-          changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
+        const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
+        const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
+        let prevClose = closes.length >= 2 ? closes[closes.length - 2] : meta.previousClose;
+        let changeAmount = null, changePercent = null;
+        if (meta.regularMarketPrice !== undefined && prevClose) {
+          changeAmount = Math.round((meta.regularMarketPrice - prevClose) * 100) / 100;
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
-
-        const priceResult = { price: currentPrice, change_amount: changeAmount, change_percent: changePercent };
+        const priceResult = { price: meta.regularMarketPrice, change_amount: changeAmount, change_percent: changePercent };
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
         return priceResult;
       } catch (e) {}
     }
-
-    if (cachedData) {
-      try { return JSON.parse(cachedData).data; } catch (e) {}
-    }
+    if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
     return null;
-  }
-
-  async function loadPrices() {
-    renderTiles();
-    refreshAllPrices(false);
   }
 
   async function refreshAllPrices(forceRefresh = false) {
     if (portfolio.length === 0) return;
     if (forceRefresh) showToast("株価を更新中...");
-    
     for (let i = 0; i < portfolio.length; i++) {
-      const stock = portfolio[i];
-      const data = await fetchOnlinePrice(stock.code, forceRefresh);
-      if (data) {
-        currentPrices[stock.code] = data;
-        renderTiles();
-      }
+      const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
+      if (data) { currentPrices[portfolio[i].code] = data; renderTiles(); }
     }
-    if (forceRefresh) showToast("株価の更新が完了しました");
+    if (forceRefresh) showToast("完了しました");
   }
 
-  // --- 新規追加: AIニュースの読み込みと表示 ---
   async function loadAINews() {
     try {
-      // JSONがブラウザにキャッシュされるのを防ぐため、末尾に時間を付ける
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
       if (response.ok) {
         const newsData = await response.json();
-        
         if (newsData && newsData.length > 0) {
-          const container = document.getElementById('ai-news-container');
-          const list = document.getElementById('ai-news-list');
-          list.innerHTML = ''; // 中身をリセット
-          
+          const list = document.getElementById('ai-news-list'); list.innerHTML = '';
           newsData.forEach(item => {
-            // ポートフォリオに含まれているかチェック
-            const isOwned = portfolio.some(stock => stock.code === item.code);
+            const isOwned = portfolio.some(s => s.code === item.code);
             const badgeHtml = isOwned ? '<span class="badge-owned">保有銘柄</span>' : '';
-            
-            // 銘柄名が辞書にあれば表示する
-            const dictData = meigaraDict[item.code] || {};
-            const stockName = dictData.shortName ? ` ${dictData.shortName}` : '';
-            
-            const card = document.createElement('div');
-            card.className = 'ai-news-card';
+            const stockName = meigaraDict[item.code]?.shortName ? ` ${meigaraDict[item.code].shortName}` : '';
+            const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
-              <div class="ai-news-header">
-                <span class="ai-news-code">${item.code}${stockName} ${badgeHtml}</span>
-                <span class="ai-news-date">${item.date}</span>
-              </div>
+              <div class="ai-news-header"><span class="ai-news-code">${item.code}${stockName} ${badgeHtml}</span><span class="ai-news-date">${item.date}</span></div>
               <div class="ai-news-title">${item.title}</div>
               <div class="ai-news-summary">${item.summary}</div>
               <a href="${item.url}" target="_blank" class="ai-news-link">📄 元のPDFを開く</a>
             `;
             list.appendChild(card);
           });
-          
-          // データがあれば枠を表示する
-          container.style.display = 'block';
+          document.getElementById('ai-news-container').style.display = 'block';
         }
       }
-    } catch (e) {
-      console.log("AIニュースの読み込みをスキップしました");
-    }
+    } catch (e) {}
   }
-  // ---------------------------------------------
 
   async function addStock() {
     const searchVal = searchInput.value.trim();
     const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
-    
-    if(!codeMatch) {
-      showToast("銘柄を選択するか、4桁のコードを入力してください。");
-      return;
-    }
+    if(!codeMatch) { showToast("銘柄を選択してください"); return; }
     const code = codeMatch[1].toUpperCase();
-    const dictData = meigaraDict[code] || {};
-    const name = dictData.shortName || searchVal.substring(code.length).trim() || '---';
-
-    const sharesVal = document.getElementById('shares').value;
-    const priceVal = document.getElementById('price').value;
-    const shares = sharesVal ? parseFloat(sharesVal) : 0;
-    const price = priceVal ? parseFloat(priceVal) : 0;
-
-    if (code) {
-      portfolio.push({ code, name, shares, price });
-      localStorage.setItem('portfolio', JSON.stringify(portfolio));
-      
-      searchInput.value = '';
-      document.getElementById('shares').value = '';
-      document.getElementById('price').value = '';
-      suggestBox.style.display = 'none';
-      
-      showToast(`${code} ${name} を登録しました`);
-      renderTiles();
-      loadAINews(); // ニュースの保有銘柄バッジを更新
-
-      const onlineData = await fetchOnlinePrice(code, true);
-      if (onlineData) {
-        currentPrices[code] = onlineData;
-        renderTiles();
-      }
-    }
-  }
-
-  function deleteStock(index) {
-    const stock = portfolio[index];
-    portfolio.splice(index, 1);
+    const name = meigaraDict[code]?.shortName || '---';
+    portfolio.push({ code, name, shares: parseFloat(document.getElementById('shares').value)||0, price: parseFloat(document.getElementById('price').value)||0 });
     localStorage.setItem('portfolio', JSON.stringify(portfolio));
-    showToast(`${stock.code} を削除しました`);
-    renderTiles();
-    loadAINews(); // ニュースの保有銘柄バッジを更新
+    searchInput.value = ''; document.getElementById('shares').value = ''; document.getElementById('price').value = '';
+    suggestBox.style.display = 'none'; showToast(`登録しました`); renderTiles(); loadAINews();
+    const data = await fetchOnlinePrice(code, true); if (data) { currentPrices[code] = data; renderTiles(); }
   }
 
+  function deleteStock(index) { portfolio.splice(index, 1); localStorage.setItem('portfolio', JSON.stringify(portfolio)); renderTiles(); loadAINews(); }
   function toggleDetails(index) {
-    const el = document.getElementById(`details-${index}`);
-    const btn = document.getElementById(`details-btn-${index}`);
-    if (el.style.display === 'block') {
-      el.style.display = 'none';
-      btn.innerText = '▼ 詳しく見る';
-    } else {
-      el.style.display = 'block';
-      btn.innerText = '▲ 閉じる';
-    }
+    const el = document.getElementById(`details-${index}`); const btn = document.getElementById(`details-btn-${index}`);
+    if (el.style.display === 'block') { el.style.display = 'none'; btn.innerText = '▼ 詳しく見る'; }
+    else { el.style.display = 'block'; btn.innerText = '▲ 閉じる'; }
   }
 
   function calcTarget(index, buyPrice, shares) {
-    const targetPrice = document.getElementById(`target-${index}`).value;
-    const resultEl = document.getElementById(`target-result-${index}`);
-    if (targetPrice && buyPrice > 0 && shares > 0) {
-      const profit = (targetPrice - buyPrice) * shares;
-      resultEl.innerText = `見込み利益: ${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
-      resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
-    } else {
-      resultEl.innerText = '見込み利益: -';
-      resultEl.className = '';
-    }
+    const val = document.getElementById(`target-${index}`).value; const res = document.getElementById(`target-result-${index}`);
+    if (val && buyPrice > 0 && shares > 0) {
+      const profit = (val - buyPrice) * shares;
+      res.innerText = `利益: ${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`; res.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+    } else { res.innerText = '利益: -'; res.className = ''; }
   }
 
   function calcAverage(index, buyPrice, buyShares) {
-    const addSharesVal = document.getElementById(`add-shares-${index}`).value;
-    const addPriceVal = document.getElementById(`add-price-${index}`).value;
-    const resultEl = document.getElementById(`avg-result-${index}`);
-
-    if (addSharesVal && addPriceVal) {
-      const addShares = parseFloat(addSharesVal);
-      const addPrice = parseFloat(addPriceVal);
-      const totalShares = buyShares + addShares;
-      if (totalShares > 0) {
-        const totalCost = (buyPrice * buyShares) + (addPrice * addShares);
-        const avgCost = totalCost / totalShares;
-        let formattedAvg = avgCost.toFixed(1).replace(/\.0$/, '');
-        resultEl.innerText = `平均単価: ${formattedAvg} 円`;
-      } else { resultEl.innerText = `平均単価: - 円`; }
-    } else { resultEl.innerText = `平均単価: - 円`; }
+    const sVal = document.getElementById(`add-shares-${index}`).value; const pVal = document.getElementById(`add-price-${index}`).value;
+    const res = document.getElementById(`avg-result-${index}`);
+    if (sVal && pVal) {
+      const ts = buyShares + parseFloat(sVal);
+      if (ts > 0) res.innerText = `平均: ${(((buyPrice * buyShares) + (parseFloat(pVal) * parseFloat(sVal))) / ts).toFixed(1).replace(/\.0$/, '')}円`;
+      else res.innerText = `平均: - 円`;
+    } else res.innerText = `平均: - 円`;
   }
 
   function renderTiles() {
-    const grid = document.getElementById('portfolio-grid');
-    grid.innerHTML = '';
-    let totalValue = 0;
-    let totalProfit = 0;
+    const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
+    let totalValue = 0, totalProfit = 0;
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
-      const currentPrice = stockData ? stockData.price : null;
-      const changeAmount = stockData ? stockData.change_amount : null;
-      const changePercent = stockData ? stockData.change_percent : null;
-      const hasCostData = stock.shares > 0 && stock.price > 0;
+      const hasCost = stock.shares > 0 && stock.price > 0;
+      let cPrice = '取得中...', cStr = '-', vStr = '-', pStr = '-', pClass = '', cClass = '';
 
-      let currentPriceStr = '取得中...';
-      let changeStr = '-';
-      let valueStr = '-';
-      let profitStr = '-';
-      let profitClass = '';
-      let changeClass = '';
-
-      if (currentPrice !== null) {
-        currentPriceStr = currentPrice.toLocaleString() + '円';
-        if (changeAmount !== null && changePercent !== null) {
-            const sign = changeAmount > 0 ? '+' : '';
-            changeStr = `${sign}${changeAmount.toLocaleString()}円 (${sign}${changePercent}%)`;
-            changeClass = changeAmount > 0 ? 'plus' : (changeAmount < 0 ? 'minus' : '');
+      if (stockData && stockData.price !== null) {
+        cPrice = stockData.price.toLocaleString() + '円';
+        if (stockData.change_amount !== null) {
+            const sign = stockData.change_amount > 0 ? '+' : '';
+            cStr = `${sign}${stockData.change_amount.toLocaleString()}円 (${sign}${stockData.change_percent}%)`;
+            cClass = stockData.change_amount > 0 ? 'plus' : (stockData.change_amount < 0 ? 'minus' : '');
         }
-        if (hasCostData) {
-            const value = currentPrice * stock.shares;
-            const profit = (currentPrice - stock.price) * stock.shares;
-            totalValue += value;
-            totalProfit += profit;
-            valueStr = value.toLocaleString() + '円';
-            profitStr = (profit > 0 ? '+' : '') + profit.toLocaleString() + '円';
-            profitClass = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
+        if (hasCost) {
+            const val = stockData.price * stock.shares; const prof = (stockData.price - stock.price) * stock.shares;
+            totalValue += val; totalProfit += prof;
+            vStr = val.toLocaleString() + '円'; pStr = (prof > 0 ? '+' : '') + prof.toLocaleString() + '円';
+            pClass = prof > 0 ? 'plus' : (prof < 0 ? 'minus' : '');
         }
       }
 
-      const displayName = stock.name || '---';
+      // ▼ 新規追加: スケジュールのお知らせ表示 ▼
+      let scheduleHtml = '';
+      const scheduleInfo = upcomingSchedule[stock.code];
+      if (scheduleInfo) {
+        scheduleHtml = `<div style="font-size:11px; color:#d32f2f; font-weight:bold; margin-bottom:8px;">
+          📢 ${stock.code} ${stock.name} ${scheduleInfo.date} (${scheduleInfo.time})決算発表予定
+        </div>`;
+      }
 
-      const tile = document.createElement('div');
-      tile.className = 'stock-tile';
+      const tile = document.createElement('div'); tile.className = 'stock-tile';
       tile.innerHTML = `
-        <div class="tile-header">
-          <div class="title-group">
-            <span class="tile-code">${stock.code}</span>
-            <span class="tile-name">${displayName}</span>
-          </div>
-          <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
-        </div>
-        <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${currentPriceStr}</span></div>
-        <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${changeClass}">${changeStr}</span></div>
-        
+        <div class="tile-header"><div class="title-group"><span class="tile-code">${stock.code}</span><span class="tile-name">${stock.name||'---'}</span></div>
+        <button class="delete-btn" onclick="deleteStock(${index})">✕</button></div>
+        ${scheduleHtml}
+        <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${cPrice}</span></div>
+        <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${cClass}">${cStr}</span></div>
         <div class="details-btn" id="details-btn-${index}" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
-        
         <div class="details-content" id="details-${index}">
           <div class="details-stats">
-            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${hasCostData ? stock.shares.toLocaleString() + '株' : '-'}</span></div>
-            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${hasCostData ? stock.price.toLocaleString() + '円' : '-'}</span></div>
-            <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${valueStr}</span></div>
-            <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${profitClass}">${profitStr}</span></div>
+            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${hasCost ? stock.shares.toLocaleString() + '株' : '-'}</span></div>
+            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${hasCost ? stock.price.toLocaleString() + '円' : '-'}</span></div>
+            <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${vStr}</span></div>
+            <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
-          
           <div class="calc-area">
-            目標株価: <input type="number" class="calc-input" style="width: 70px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="例: 2000"> 円
-            <span id="target-result-${index}" style="font-weight: bold; margin-left: 5px;">見込み利益: -</span>
+            目標株価: <input type="number" class="calc-input" style="width: 60px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
+            <span id="target-result-${index}" style="font-weight: bold; margin-left: 5px;">利益: -</span>
           </div>
-
           <div class="calc-area">
-            追加で <input type="number" class="calc-input" style="width: 60px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="株数"> 株を
-            <input type="number" class="calc-input" style="width: 70px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="買値"> 円で買うと
-            ⇒ <span id="avg-result-${index}" style="font-weight: bold; color: #1976d2;">平均単価: - 円</span>
+            追加で <input type="number" class="calc-input" style="width: 50px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})"> 株を
+            <input type="number" class="calc-input" style="width: 60px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})"> 円で買うと
+            ⇒ <span id="avg-result-${index}" style="font-weight: bold; color: #1976d2;">平均: - 円</span>
           </div>
-        </div>
-      `;
+        </div>`;
       grid.appendChild(tile);
     });
-
     document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
-    const totalProfitEl = document.getElementById('total-profit');
-    totalProfitEl.innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
-    totalProfitEl.className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
+    document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
+    document.getElementById('total-profit').className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
   }
 
-  // 起動時の処理
   async function init() {
     await loadDictionary();
-    loadPrices();
-    loadAINews(); // AIニュースを読み込む
+    // ▼ 新規追加: 決算スケジュールの読み込み ▼
+    try {
+      const res = await fetch('schedule.json?t=' + new Date().getTime());
+      if (res.ok) upcomingSchedule = await res.json();
+    } catch(e) {}
+    renderTiles();
+    refreshAllPrices(false);
+    loadAINews();
   }
-  
   init();
-
 </script>
 </body>
 </html>
