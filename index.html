@@ -13,6 +13,63 @@
   }
   h1 { text-align: center; color: #2c3e50; }
   
+  /* --- 新規追加: AIニュース用のデザイン --- */
+  .ai-news-container {
+    background: linear-gradient(135deg, #f0f7ff, #e6f0fa);
+    border-left: 5px solid #1976d2;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: none; /* データが無い時は隠す */
+  }
+  .ai-news-container h2 {
+    margin-top: 0;
+    font-size: 1.1em;
+    color: #1976d2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .ai-news-card {
+    background: #fff;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .ai-news-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+  }
+  .ai-news-code {
+    font-weight: bold;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-owned {
+    background: #ff9800;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75em;
+  }
+  .ai-news-date { color: #7f8c8d; font-size: 0.85em; }
+  .ai-news-title { font-weight: bold; font-size: 1em; margin-bottom: 8px; color: #333; }
+  .ai-news-summary { font-size: 0.9em; color: #444; line-height: 1.6; white-space: pre-wrap; }
+  .ai-news-link {
+    display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none;
+  }
+  .ai-news-link:hover { text-decoration: underline; }
+  /* ---------------------------------------- */
+
   .input-card {
     background: #fff;
     padding: 15px 20px;
@@ -62,9 +119,7 @@
     font-size: 13px;
     border-bottom: 1px solid #f0f0f0;
   }
-  .suggest-item:hover {
-    background-color: #e0f0ff;
-  }
+  .suggest-item:hover { background-color: #e0f0ff; }
 
   #shares { width: 80px; }
   #price { width: 90px; }
@@ -116,6 +171,13 @@
 
 <div id="toast"></div>
 
+<!-- 新規追加: AI決算サマリー表示枠 -->
+<div id="ai-news-container" class="ai-news-container">
+  <h2>✨ AI決算サマリー (本日)</h2>
+  <div id="ai-news-list"></div>
+</div>
+<!-- ここまで -->
+
 <div class="input-card">
   <div class="form-group">
     <div class="search-container">
@@ -144,8 +206,8 @@
   let currentPrices = {};
   let meigaraDict = {};
   
-  const CACHE_EXPIRE_MS = 5 * 60 * 1000; // 5分間のキャッシュ有効期限
-  let lastNetworkRequestTime = 0; // 前回のAPIリクエスト時間を記録
+  const CACHE_EXPIRE_MS = 5 * 60 * 1000;
+  let lastNetworkRequestTime = 0;
 
   function showToast(msg) {
     const toast = document.getElementById('toast');
@@ -227,7 +289,7 @@
   async function loadDictionary() {
     try {
       const response = await fetch('jpx.csv');
-      if(!response.ok) { searchInput.placeholder = "辞書が見つかりません (jpx.csv)"; return; }
+      if(!response.ok) { searchInput.placeholder = "辞書が見つかりません"; return; }
       const buffer = await response.arrayBuffer();
       let text = new TextDecoder('shift_jis').decode(buffer);
       if (!text.includes('コード') && !text.includes('銘柄')) {
@@ -235,7 +297,7 @@
       }
       
       const lines = text.split('\n');
-      if (lines.length < 2) { searchInput.placeholder = "CSVが空です"; return; }
+      if (lines.length < 2) return;
 
       let count = 0;
       for (let i = 1; i < lines.length; i++) {
@@ -250,27 +312,20 @@
         if (code.length === 5 && code.endsWith('0')) code = code.substring(0, 4);
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
-        const name = cols[2] || '';
-        const shortName = cols[3] || name;
-        const engName = cols[4] || '';
-        
         meigaraDict[code] = { 
-          shortName: shortName,
-          searchName: normalizeForSearch(name),
-          searchShortName: normalizeForSearch(shortName),
-          searchEngName: normalizeForSearch(engName)
+          shortName: cols[3] || cols[2] || '',
+          searchName: normalizeForSearch(cols[2] || ''),
+          searchShortName: normalizeForSearch(cols[3] || cols[2] || ''),
+          searchEngName: normalizeForSearch(cols[4] || '')
         };
         count++;
       }
-
       searchInput.placeholder = count > 0 ? "銘柄検索 (2文字以上で候補表示)" : "有効な銘柄がありません";
     } catch (e) {
-      console.error("辞書の読み込みエラー:", e);
       searchInput.placeholder = "辞書の読み込みエラー";
     }
   }
 
-  // オンラインでのYahoo Finance株価取得（5分キャッシュ付き＋1秒ウェイト）
   async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
@@ -278,9 +333,7 @@
     if (!forceRefresh && cachedData) {
       try {
         const parsed = JSON.parse(cachedData);
-        if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) {
-          return parsed.data;
-        }
+        if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data;
       } catch (e) {}
     }
 
@@ -292,7 +345,6 @@
 
     for (let getProxyUrl of proxies) {
       try {
-        // 実際の通信が発生する場合のみ、前回の通信から1秒空ける
         const now = Date.now();
         const elapsed = now - lastNetworkRequestTime;
         if (elapsed < 1000) {
@@ -311,30 +363,19 @@
         
         const closes = result.indicators?.quote?.[0]?.close?.filter(v => v !== null && v !== undefined) || [];
         let prevClose = null;
-        if (closes.length >= 2) {
-          prevClose = closes[closes.length - 2];
-        } else if (meta.previousClose !== undefined) {
-          prevClose = meta.previousClose;
-        }
+        if (closes.length >= 2) prevClose = closes[closes.length - 2];
+        else if (meta.previousClose !== undefined) prevClose = meta.previousClose;
         
-        let changeAmount = null;
-        let changePercent = null;
+        let changeAmount = null; let changePercent = null;
         if (currentPrice !== undefined && prevClose) {
           changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
 
         const priceResult = { price: currentPrice, change_amount: changeAmount, change_percent: changePercent };
-        
-        localStorage.setItem(cacheKey, JSON.stringify({
-          timestamp: Date.now(),
-          data: priceResult
-        }));
-
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
         return priceResult;
-      } catch (e) {
-        console.warn(`Proxy fetch failed for ${code}:`, e);
-      }
+      } catch (e) {}
     }
 
     if (cachedData) {
@@ -344,13 +385,6 @@
   }
 
   async function loadPrices() {
-    try {
-      const response = await fetch('prices.json');
-      if (response.ok) {
-        currentPrices = await response.json();
-      }
-    } catch (error) {}
-    
     renderTiles();
     refreshAllPrices(false);
   }
@@ -369,6 +403,52 @@
     }
     if (forceRefresh) showToast("株価の更新が完了しました");
   }
+
+  // --- 新規追加: AIニュースの読み込みと表示 ---
+  async function loadAINews() {
+    try {
+      // JSONがブラウザにキャッシュされるのを防ぐため、末尾に時間を付ける
+      const response = await fetch('ai_news.json?t=' + new Date().getTime());
+      if (response.ok) {
+        const newsData = await response.json();
+        
+        if (newsData && newsData.length > 0) {
+          const container = document.getElementById('ai-news-container');
+          const list = document.getElementById('ai-news-list');
+          list.innerHTML = ''; // 中身をリセット
+          
+          newsData.forEach(item => {
+            // ポートフォリオに含まれているかチェック
+            const isOwned = portfolio.some(stock => stock.code === item.code);
+            const badgeHtml = isOwned ? '<span class="badge-owned">保有銘柄</span>' : '';
+            
+            // 銘柄名が辞書にあれば表示する
+            const dictData = meigaraDict[item.code] || {};
+            const stockName = dictData.shortName ? ` ${dictData.shortName}` : '';
+            
+            const card = document.createElement('div');
+            card.className = 'ai-news-card';
+            card.innerHTML = `
+              <div class="ai-news-header">
+                <span class="ai-news-code">${item.code}${stockName} ${badgeHtml}</span>
+                <span class="ai-news-date">${item.date}</span>
+              </div>
+              <div class="ai-news-title">${item.title}</div>
+              <div class="ai-news-summary">${item.summary}</div>
+              <a href="${item.url}" target="_blank" class="ai-news-link">📄 元のPDFを開く</a>
+            `;
+            list.appendChild(card);
+          });
+          
+          // データがあれば枠を表示する
+          container.style.display = 'block';
+        }
+      }
+    } catch (e) {
+      console.log("AIニュースの読み込みをスキップしました");
+    }
+  }
+  // ---------------------------------------------
 
   async function addStock() {
     const searchVal = searchInput.value.trim();
@@ -398,6 +478,7 @@
       
       showToast(`${code} ${name} を登録しました`);
       renderTiles();
+      loadAINews(); // ニュースの保有銘柄バッジを更新
 
       const onlineData = await fetchOnlinePrice(code, true);
       if (onlineData) {
@@ -413,6 +494,7 @@
     localStorage.setItem('portfolio', JSON.stringify(portfolio));
     showToast(`${stock.code} を削除しました`);
     renderTiles();
+    loadAINews(); // ニュースの保有銘柄バッジを更新
   }
 
   function toggleDetails(index) {
@@ -542,9 +624,15 @@
     totalProfitEl.className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
   }
 
-  loadDictionary();
-  loadPrices();
-</script>
+  // 起動時の処理
+  async function init() {
+    await loadDictionary();
+    loadPrices();
+    loadAINews(); // AIニュースを読み込む
+  }
+  
+  init();
 
+</script>
 </body>
 </html>
