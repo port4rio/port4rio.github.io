@@ -2,7 +2,9 @@ name: AI Earnings Monitor
 
 on:
   schedule:
-    - cron: '30 6 * * 1-5' # 平日15:30 (JST)
+    - cron: '0 3 * * 1-5'   # 平日12:00 (JST) - 前場引け後の発表をカバー
+    - cron: '30 6 * * 1-5'  # 平日15:30 (JST) - 15:00発表のピークをカバー
+    - cron: '30 8 * * 1-5'  # 平日17:30 (JST) - 大引け後の遅い発表をカバー
   workflow_dispatch: # 手動実行ボタン
 
 jobs:
