@@ -2,17 +2,44 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Port4rio</title>
 <style>
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; background-color: #f4f5f7; color: #333; max-width: 1000px; margin: 0 auto; }
-  h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-bottom: 20px; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { text-align: center; color: #2c3e50; }
   
-  .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-  .form-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; position: relative; }
-  input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+  .input-card {
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .form-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
   
-  .search-container { position: relative; width: 240px; }
+  input[type="text"], input[type="number"] {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .search-container {
+    position: relative;
+    width: 240px;
+  }
   #search-input { width: 100%; box-sizing: border-box; }
   
   .suggest-box {
@@ -109,14 +136,16 @@
     <div>合計評価額: <span id="total-value">0円</span></div>
     <div>合計損益: <span id="total-profit">0円</span></div>
   </div>
-  <button class="reload-btn" onclick="refreshAllPrices()">🔄 株価を最新に更新</button>
+  <button class="reload-btn" onclick="refreshAllPrices(true)">🔄 株価を最新に更新</button>
 </div>
 
 <script>
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
-  let pricesLoaded = false;
+  
+  const CACHE_EXPIRE_MS = 5 * 60 * 1000; // 5分間のキャッシュ有効期限
+  let lastNetworkRequestTime = 0; // 前回のAPIリクエスト時間を記録
 
   function showToast(msg) {
     const toast = document.getElementById('toast');
@@ -127,7 +156,7 @@
 
   function normalizeForSearch(str) {
     if (!str) return '';
-    str = str.replace(/[\s　]+/g, '').toUpperCase();
+    str = str.replace(/[\s ]+/g, '').toUpperCase();
     str = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     });
@@ -169,12 +198,7 @@
           if (count >= 100) break;
         }
       }
-      
-      if (count > 0) {
-        suggestBox.style.display = 'block';
-      } else {
-        suggestBox.style.display = 'none';
-      }
+      suggestBox.style.display = count > 0 ? 'block' : 'none';
     } else {
       suggestBox.style.display = 'none';
     }
@@ -203,37 +227,27 @@
   async function loadDictionary() {
     try {
       const response = await fetch('jpx.csv');
-      if(!response.ok) {
-        searchInput.placeholder = "辞書が見つかりません (jpx.csv)";
-        return;
-      }
+      if(!response.ok) { searchInput.placeholder = "辞書が見つかりません (jpx.csv)"; return; }
       const buffer = await response.arrayBuffer();
-      
       let text = new TextDecoder('shift_jis').decode(buffer);
       if (!text.includes('コード') && !text.includes('銘柄')) {
         text = new TextDecoder('utf-8').decode(buffer);
       }
       
       const lines = text.split('\n');
-      if (lines.length < 2) {
-        searchInput.placeholder = "CSVが空です";
-        return;
-      }
+      if (lines.length < 2) { searchInput.placeholder = "CSVが空です"; return; }
 
       let count = 0;
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = parseCSVRow(lines[i]).map(c => c.trim().replace(/^"|"$/g, ''));
-        
         if (cols.length < 2) continue;
         
         let rawCode = cols[1];
         if (!rawCode) continue;
 
         let code = rawCode;
-        if (code.length === 5 && code.endsWith('0')) {
-          code = code.substring(0, 4);
-        }
+        if (code.length === 5 && code.endsWith('0')) code = code.substring(0, 4);
         if (!/^[A-Za-z0-9]{4}$/.test(code)) continue;
 
         const name = cols[2] || '';
@@ -249,23 +263,28 @@
         count++;
       }
 
-      if (count > 0) {
-        searchInput.placeholder = `銘柄検索 (2文字以上で候補表示)`;
-      } else {
-        searchInput.placeholder = "有効な銘柄がありません";
-      }
-
+      searchInput.placeholder = count > 0 ? "銘柄検索 (2文字以上で候補表示)" : "有効な銘柄がありません";
     } catch (e) {
       console.error("辞書の読み込みエラー:", e);
       searchInput.placeholder = "辞書の読み込みエラー";
     }
   }
 
-  // ブラウザ直接でYahoo Financeからリアルタイム株価を取得する関数
-  async function fetchOnlinePrice(code) {
+  // オンラインでのYahoo Finance株価取得（5分キャッシュ付き＋1秒ウェイト）
+  async function fetchOnlinePrice(code, forceRefresh = false) {
+    const cacheKey = `price_cache_${code}`;
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (!forceRefresh && cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) {
+          return parsed.data;
+        }
+      } catch (e) {}
+    }
+
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d`;
-    
-    // パブリックCORSプロキシリスト
     const proxies = [
       url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
       url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
@@ -273,6 +292,14 @@
 
     for (let getProxyUrl of proxies) {
       try {
+        // 実際の通信が発生する場合のみ、前回の通信から1秒空ける
+        const now = Date.now();
+        const elapsed = now - lastNetworkRequestTime;
+        if (elapsed < 1000) {
+          await new Promise(r => setTimeout(r, 1000 - elapsed));
+        }
+        lastNetworkRequestTime = Date.now();
+
         const res = await fetch(getProxyUrl(targetUrl));
         if (!res.ok) continue;
         const data = await res.json();
@@ -282,11 +309,9 @@
         const meta = result.meta;
         const currentPrice = meta.regularMarketPrice;
         
-        // 5日分の終値データから「前営業日の終値」を正確に算出
         const closes = result.indicators?.quote?.[0]?.close?.filter(v => v !== null && v !== undefined) || [];
         let prevClose = null;
         if (closes.length >= 2) {
-          // 配列の最後から2番目が前営業日の終値
           prevClose = closes[closes.length - 2];
         } else if (meta.previousClose !== undefined) {
           prevClose = meta.previousClose;
@@ -299,46 +324,50 @@
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
 
-        return {
-          price: currentPrice,
-          change_amount: changeAmount,
-          change_percent: changePercent
-        };
+        const priceResult = { price: currentPrice, change_amount: changeAmount, change_percent: changePercent };
+        
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: priceResult
+        }));
+
+        return priceResult;
       } catch (e) {
         console.warn(`Proxy fetch failed for ${code}:`, e);
       }
+    }
+
+    if (cachedData) {
+      try { return JSON.parse(cachedData).data; } catch (e) {}
     }
     return null;
   }
 
   async function loadPrices() {
-    // 静的prices.jsonがある場合は先に読み込む
     try {
       const response = await fetch('prices.json');
       if (response.ok) {
         currentPrices = await response.json();
       }
-    } catch (error) {
-      console.log("prices.json の読み込みをスキップしました");
-    }
+    } catch (error) {}
     
-    pricesLoaded = true;
     renderTiles();
-    
-    // 登録中の全銘柄についてオンラインで最新価格を取得
-    refreshAllPrices();
+    refreshAllPrices(false);
   }
 
-  async function refreshAllPrices() {
+  async function refreshAllPrices(forceRefresh = false) {
     if (portfolio.length === 0) return;
+    if (forceRefresh) showToast("株価を更新中...");
     
-    for (let stock of portfolio) {
-      const data = await fetchOnlinePrice(stock.code);
+    for (let i = 0; i < portfolio.length; i++) {
+      const stock = portfolio[i];
+      const data = await fetchOnlinePrice(stock.code, forceRefresh);
       if (data) {
         currentPrices[stock.code] = data;
         renderTiles();
       }
     }
+    if (forceRefresh) showToast("株価の更新が完了しました");
   }
 
   async function addStock() {
@@ -365,13 +394,12 @@
       searchInput.value = '';
       document.getElementById('shares').value = '';
       document.getElementById('price').value = '';
-      
       suggestBox.style.display = 'none';
+      
       showToast(`${code} ${name} を登録しました`);
       renderTiles();
 
-      // 追加した銘柄の株価を即座にFetch
-      const onlineData = await fetchOnlinePrice(code);
+      const onlineData = await fetchOnlinePrice(code, true);
       if (onlineData) {
         currentPrices[code] = onlineData;
         renderTiles();
@@ -420,19 +448,14 @@
     if (addSharesVal && addPriceVal) {
       const addShares = parseFloat(addSharesVal);
       const addPrice = parseFloat(addPriceVal);
-      
       const totalShares = buyShares + addShares;
       if (totalShares > 0) {
         const totalCost = (buyPrice * buyShares) + (addPrice * addShares);
         const avgCost = totalCost / totalShares;
         let formattedAvg = avgCost.toFixed(1).replace(/\.0$/, '');
         resultEl.innerText = `平均単価: ${formattedAvg} 円`;
-      } else {
-        resultEl.innerText = `平均単価: - 円`;
-      }
-    } else {
-      resultEl.innerText = `平均単価: - 円`;
-    }
+      } else { resultEl.innerText = `平均単価: - 円`; }
+    } else { resultEl.innerText = `平均単価: - 円`; }
   }
 
   function renderTiles() {
@@ -446,7 +469,6 @@
       const currentPrice = stockData ? stockData.price : null;
       const changeAmount = stockData ? stockData.change_amount : null;
       const changePercent = stockData ? stockData.change_percent : null;
-
       const hasCostData = stock.shares > 0 && stock.price > 0;
 
       let currentPriceStr = '取得中...';
@@ -492,7 +514,6 @@
         <div class="details-btn" id="details-btn-${index}" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
         
         <div class="details-content" id="details-${index}">
-          
           <div class="details-stats">
             <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${hasCostData ? stock.shares.toLocaleString() + '株' : '-'}</span></div>
             <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${hasCostData ? stock.price.toLocaleString() + '円' : '-'}</span></div>
