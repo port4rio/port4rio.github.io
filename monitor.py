@@ -22,7 +22,8 @@ model = genai.GenerativeModel('gemini-3.5-flash-lite')
 
 # 確実に日本時間（JST）で今日の日付を取得する
 JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
-today = datetime.datetime.now(JST)
+# today = datetime.datetime.now(JST)
+today = datetime.datetime(2026, 8, 3, tzinfo=JST)
 today_str_tdnet = today.strftime('%Y%m%d')
 today_patterns = [f"{today.month}/{today.day}", today.strftime('%m/%d')]
 print(f"【処理開始】日本時間: {today.strftime('%Y-%m-%d %H:%M:%S')}")
