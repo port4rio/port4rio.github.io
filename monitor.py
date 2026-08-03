@@ -20,74 +20,37 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-3.5-flash-lite')
 
-# 確実に日本時間（JST）で今日の日付を取得する
 JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
-# today = datetime.datetime.now(JST)
+# ▼【テスト用】時計を「8月3日」に固定
 today = datetime.datetime(2026, 8, 3, tzinfo=JST)
 today_str_tdnet = today.strftime('%Y%m%d')
-today_patterns = [f"{today.month}/{today.day}", today.strftime('%m/%d')]
-print(f"【処理開始】日本時間: {today.strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"【テスト処理開始】日付固定: {today.strftime('%Y-%m-%d %H:%M:%S')}")
 
 # ==========================================
-# 1. 決算スケジュールの取得と保存
+# 1. 決算スケジュールの取得（スキップして直接指定）
 # ==========================================
-print("トレーダーズ・ウェブから決算スケジュールを取得中...")
-url = "https://www.traders.co.jp/market_jp/earnings_calendar"
-headers = {'User-Agent': 'Mozilla/5.0'}
-
-schedule_data = {}
-todays_codes = []
-
-try:
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    
-    current_date = None
-    for tr in soup.find_all('tr'):
-        text = tr.get_text(separator=' ', strip=True)
-        d_match = re.search(r'\b(\d{1,2}/\d{1,2})\b', text)
-        if d_match:
-            current_date = d_match.group(1)
-            
-        c_match = re.search(r'\b([1-9][0-9A-Z]{3})\b', text)
-        t_match = re.search(r'\b(\d{1,2}:\d{2})\b', text)
-        
-        if c_match and current_date:
-            code = c_match.group(1)
-            time_str = t_match.group(1) if t_match else "-"
-            schedule_data[code] = {"date": current_date, "time": time_str}
-            
-            if current_date in today_patterns:
-                todays_codes.append(code)
-                
-    todays_codes = list(set(todays_codes))
-    with open("schedule.json", "w", encoding="utf-8") as f:
-        json.dump(schedule_data, f, ensure_ascii=False, indent=2)
-    print(f"スケジュール取得完了: 全 {len(schedule_data)} 件 (うち本日発表 {len(todays_codes)} 件)")
-except Exception as e:
-    print(f"スケジュール取得エラー: {e}")
+# ▼ トレーダーズ・ウェブを見に行かず、強制的にこの2銘柄を指定
+todays_codes = ['1787', '6366']
+print(f"スケジュール取得をスキップし、強制テストします: {todays_codes}")
 
 # ==========================================
-# 2. TDnetから対象銘柄のPDFURLを抽出 (複数ページ対応)
+# 2. TDnetから対象銘柄のPDFURLを抽出
 # ==========================================
 def get_tdnet_pdfs(target_codes):
     if not target_codes:
         return []
         
-    print("TDnetの本日分ページを巡回中...")
+    print("TDnetの8/3ページを巡回中...")
     base_url = "https://www.release.tdnet.info/inbs/"
     found_pdfs = []
     
-    # 001から005ページ（最大500件）までパトロールする
     for page_num in range(1, 6):
-        page_str = str(page_num).zfill(3) # 001, 002...
+        page_str = str(page_num).zfill(3)
         tdnet_url = f"https://www.release.tdnet.info/inbs/I_list_{page_str}_{today_str_tdnet}.html"
         
         try:
-            response = requests.get(tdnet_url)
+            response = requests.get(tdnet_url, timeout=10)
             response.encoding = response.apparent_encoding
-            
-            # ページが存在しなければループを終了
             if response.status_code != 200:
                 break
                 
@@ -143,13 +106,11 @@ def summarize_pdfs(pdf_list):
             reader = PdfReader(io.BytesIO(res.content))
             text = "".join([reader.pages[i].extract_text() for i in range(min(2, len(reader.pages)))])
             
-            # Geminiに渡すデータの中身を準備
             request_contents = []
             
             if not text.strip():
                 print(f"  └ ⚠️ テキスト抽出不能。AIの視覚機能(OCR)でPDFを直接読み込みます。")
                 
-                # 最初の2ページだけを切り出して新しいPDFデータを作成（節約と高速化のため）
                 writer = PdfWriter()
                 for i in range(min(2, len(reader.pages))):
                     writer.add_page(reader.pages[i])
@@ -158,7 +119,6 @@ def summarize_pdfs(pdf_list):
                 writer.write(short_pdf_stream)
                 pdf_bytes = short_pdf_stream.getvalue()
                 
-                # Geminiに「これはPDFファイルだよ」と教えてバイナリデータを渡す
                 doc_part = {
                     "mime_type": "application/pdf",
                     "data": pdf_bytes
@@ -176,7 +136,6 @@ def summarize_pdfs(pdf_list):
                 request_contents = [prompt, doc_part]
             
             else:
-                # テキストが抽出できた場合は今まで通りテキストで渡す
                 prompt = f"""以下の決算短信から、個人投資家向けに要約を作成してください。
 挨拶や前置きは一切不要です。必ず以下のフォーマット通りに出力してください。
 
@@ -196,7 +155,6 @@ def summarize_pdfs(pdf_list):
             ai_response = None
             for attempt in range(max_retries):
                 try:
-                    # テキストまたはPDFデータをGeminiに送信
                     ai_response = model.generate_content(request_contents)
                     break 
                 except Exception as api_error:
