@@ -264,7 +264,7 @@
     }
   }
 
-  // アコーディオン形式＆新プロンプト対応のAIニュース読み込み
+// アコーディオン形式＆デザイン調整版
   async function loadAINews() {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
@@ -275,16 +275,29 @@
           newsData.forEach(item => {
             const isOwned = portfolio.some(s => s.code === item.code);
             const badgeHtml = isOwned ? '<span class="badge-owned">保有</span>' : '';
-            const stockName = meigaraDict[item.code]?.shortName ? meigaraDict[item.code].shortName : '';
+            const stockName = meigaraDict[item.code]?.shortName || '---';
             
-            // YYYY-MM-DD を MM/DD に変換
+            // 日付から[]を削除し 08/04 形式に
             const shortDate = item.date.substring(5).replace('-', '/');
+            
+            // タイトルから矢印（⤴⤵→）を抜き出して分離する
+            let arrow = '';
+            let displayTitle = item.title;
+            const arrowMatch = item.title.match(/[⤴⤵→]/);
+            if (arrowMatch) {
+              arrow = arrowMatch[0];
+              displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
+            }
             
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <div class="ai-news-meta">[${shortDate}] ${badgeHtml} ${item.code} ${stockName}</div>
-                <div class="ai-news-title">${item.title}</div>
+                <div class="ai-news-meta" style="align-items: baseline;">
+                  <span>${shortDate}</span>
+                  ${badgeHtml}
+                  <span style="color: #2c3e50; font-weight: bold; font-size: 1.1em; margin-left: 4px;">${stockName} <span style="color: #d32f2f;">${arrow}</span></span>
+                </div>
+                <div class="ai-news-title" style="margin-top: 4px;">${displayTitle}</div>
               </div>
               <div class="ai-news-body">
                 <div class="ai-news-summary">${item.summary}</div>
@@ -298,7 +311,6 @@
       }
     } catch (e) {}
   }
-
   async function addStock() {
     const searchVal = searchInput.value.trim();
     const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
