@@ -180,6 +180,7 @@ if __name__ == "__main__":
         news_dict[n['code']] = n
         
     final_news = list(news_dict.values())
+    final_news.reverse()
     final_news.sort(key=lambda x: x['date'], reverse=True)
     
     with open("ai_news.json", "w", encoding="utf-8") as f:
