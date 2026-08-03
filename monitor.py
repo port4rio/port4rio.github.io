@@ -6,7 +6,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import io
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 import google.generativeai as genai
 
 # ==========================================
@@ -115,7 +115,7 @@ def get_tdnet_pdfs(target_codes):
     return found_pdfs
 
 # ==========================================
-# 3. PDF抽出＆Geminiによる要約（制限対策版）
+# 3. PDF抽出＆Geminiによる要約（OCR直接読み込み対応版）
 # ==========================================
 def summarize_pdfs(pdf_list):
     news_data = []
@@ -123,7 +123,7 @@ def summarize_pdfs(pdf_list):
     start_time = time.time()
     
     for item in pdf_list:
-        print(f"[{item['code']}] を要約中...")
+        print(f"\n[{item['code']}] 処理開始...")
         try:
             current_time = time.time()
             if current_time - start_time > 60:
@@ -135,25 +135,103 @@ def summarize_pdfs(pdf_list):
                 request_count = 0
                 start_time = time.time()
 
-            res = requests.get(item['pdf_url'])
+            print(f"  └ 1. TDnetからPDFをダウンロード中...")
+            res = requests.get(item['pdf_url'], timeout=20)
+            
+            print(f"  └ 2. PDFからテキストを抽出中...")
             reader = PdfReader(io.BytesIO(res.content))
             text = "".join([reader.pages[i].extract_text() for i in range(min(2, len(reader.pages)))])
-                
-            prompt = f"以下の決算短信冒頭から、個人投資家向けに重要なポイント(売上・利益の増減や来期見通しなど)を3つの簡潔な箇条書きで要約して。\n{text}"
             
-            ai_response = model.generate_content(prompt)
+            # Geminiに渡すデータの中身を準備
+            request_contents = []
+            
+            if not text.strip():
+                print(f"  └ ⚠️ テキスト抽出不能。AIの視覚機能(OCR)でPDFを直接読み込みます。")
+                
+                # 最初の2ページだけを切り出して新しいPDFデータを作成（節約と高速化のため）
+                writer = PdfWriter()
+                for i in range(min(2, len(reader.pages))):
+                    writer.add_page(reader.pages[i])
+                
+                short_pdf_stream = io.BytesIO()
+                writer.write(short_pdf_stream)
+                pdf_bytes = short_pdf_stream.getvalue()
+                
+                # Geminiに「これはPDFファイルだよ」と教えてバイナリデータを渡す
+                doc_part = {
+                    "mime_type": "application/pdf",
+                    "data": pdf_bytes
+                }
+                
+                prompt = """以下の決算短信（画像）の冒頭部分を読んで、個人投資家向けに要約を作成してください。
+挨拶や前置きは一切不要です。必ず以下のフォーマット通りに出力してください。
+
+1行目: 業績の印象がパッとわかる魅力的な15文字程度の見出し。好調なら末尾に「⤴」、苦戦なら「⤵」、横ばいなら「→」をつけてください。
+2行目以降: 以下の3点を簡潔な箇条書き（・から始める）でまとめてください。
+・売上と利益の増減
+・なぜその業績になったのか（市場背景や要因）
+・来期の見通し
+"""
+                request_contents = [prompt, doc_part]
+            
+            else:
+                # テキストが抽出できた場合は今まで通りテキストで渡す
+                prompt = f"""以下の決算短信から、個人投資家向けに要約を作成してください。
+挨拶や前置きは一切不要です。必ず以下のフォーマット通りに出力してください。
+
+1行目: 業績の印象がパッとわかる魅力的な15文字程度の見出し。好調なら末尾に「⤴」、苦戦なら「⤵」、横ばいなら「→」をつけてください。
+2行目以降: 以下の3点を簡潔な箇条書き（・から始める）でまとめてください。
+・売上と利益の増減
+・なぜその業績になったのか（市場背景や要因）
+・来期の見通し
+
+【テキスト】
+{text}
+"""
+                request_contents = [prompt]
+
+            print(f"  └ 3. Geminiへ要約をリクエスト中...")
+            max_retries = 3
+            ai_response = None
+            for attempt in range(max_retries):
+                try:
+                    # テキストまたはPDFデータをGeminiに送信
+                    ai_response = model.generate_content(request_contents)
+                    break 
+                except Exception as api_error:
+                    if "429" in str(api_error) and attempt < max_retries - 1:
+                        print(f"    ⚠️ API制限を検知。30秒待機して再試行します... ({attempt+1}/{max_retries})")
+                        time.sleep(30)
+                    else:
+                        raise api_error
+            
             request_count += 1
             
+            ai_text = ai_response.text.strip() if ai_response else ""
+            lines = [line for line in ai_text.split('\n') if line.strip()]
+            
+            if len(lines) >= 2:
+                catchy_title = lines[0].replace('1行目:', '').replace('*', '').strip()
+                summary_text = '\n'.join(lines[1:]).replace('2行目以降:', '').strip()
+            else:
+                catchy_title = "要約のフォーマットエラー→"
+                summary_text = ai_text
+
             news_data.append({
                 "date": today.strftime('%Y-%m-%d'),
                 "code": item["code"],
-                "title": item["title"],
-                "summary": ai_response.text.strip(),
+                "title": catchy_title,
+                "summary": summary_text,
                 "url": item["pdf_url"]
             })
+            print(f"＞ [{item['code']}] ✨要約完了！")
             time.sleep(2)
+            
+        except requests.exceptions.Timeout:
+            print(f"＞ ❌エラー ({item['code']}): TDnetの応答がありません（タイムアウト）")
         except Exception as e:
-            print(f"エラー ({item['code']}): {e}")
+            print(f"＞ ❌エラー ({item['code']}): {e}")
+            
     return news_data
 
 # ==========================================
