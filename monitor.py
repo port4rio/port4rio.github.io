@@ -18,7 +18,7 @@ if not GEMINI_API_KEY:
     exit(1)
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-3.5-flash-lite')
 
 # 確実に日本時間（JST）で今日の日付を取得する
 JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
