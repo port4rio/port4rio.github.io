@@ -137,7 +137,23 @@
     </div>
   </div>
 </div>
-
+<div class="summary-card" style="margin-bottom: 20px;">
+  <div style="text-align: center; margin-bottom: 12px;">
+    <span style="font-size: 13px; font-weight: bold; color: #2c3e50; margin-right: 8px;">🔄 並べ替え:</span>
+    <select id="sort-select" onchange="sortPortfolio()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; outline: none;">
+      <option value="default">選択してください</option>
+      <option value="code">銘柄コード順</option>
+      <option value="value">評価額が大きい順</option>
+      <option value="profit_rate">損益率が高い順</option>
+      <option value="dod_change">前日比(%)が高い順</option>
+    </select>
+  </div>
+  <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; border-top: 1px dashed #eee; padding-top: 12px;">
+    <button onclick="backupPortfolio()" style="padding: 8px 16px; background-color: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">💾 バックアップ (保存)</button>
+    <button onclick="document.getElementById('restore-file').click()" style="padding: 8px 16px; background-color: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">📂 復元 (読込)</button>
+    <input type="file" id="restore-file" accept=".json" style="display: none;" onchange="restorePortfolio(event)">
+  </div>
+</div>
 <!-- 免責事項 -->
 <div class="disclaimer">
   当サイトの情報は参考であり投資の最終判断は自己責任でお願いします。<br>
@@ -478,6 +494,84 @@
     renderTiles();
     refreshAllPrices(false);
     loadAINews();
+  }
+function sortPortfolio() {
+    const type = document.getElementById('sort-select').value;
+    if (type === 'default') return;
+    
+    portfolio.sort((a, b) => {
+      const dataA = currentPrices[a.code] || {};
+      const dataB = currentPrices[b.code] || {};
+      const priceA = dataA.price || 0;
+      const priceB = dataB.price || 0;
+
+      if (type === 'code') {
+        return a.code.localeCompare(b.code); // 文字列順（A-Z, 0-9）
+      } else if (type === 'value') {
+        const valA = priceA * (a.shares || 0);
+        const valB = priceB * (b.shares || 0);
+        return valB - valA; // 降順
+      } else if (type === 'profit_rate') {
+        const profA = a.price > 0 && priceA > 0 ? ((priceA - a.price) / a.price) : -9999;
+        const profB = b.price > 0 && priceB > 0 ? ((priceB - b.price) / b.price) : -9999;
+        return profB - profA; // 降順
+      } else if (type === 'dod_change') {
+        const dodA = dataA.change_percent || -9999;
+        const dodB = dataB.change_percent || -9999;
+        return dodB - dodA; // 降順
+      }
+      return 0;
+    });
+    
+    localStorage.setItem('portfolio', JSON.stringify(portfolio));
+    renderTiles();
+    
+    // 選択状態をリセット
+    document.getElementById('sort-select').value = 'default';
+    showToast("並べ替えを適用しました");
+  }
+
+  function backupPortfolio() {
+    if (portfolio.length === 0) {
+      showToast("バックアップするデータがありません");
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(portfolio));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "port4rio_backup.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    showToast("バックアップを保存しました");
+  }
+
+  function restorePortfolio(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          if (confirm("現在のポートフォリオを上書きして復元しますか？")) {
+            portfolio = imported;
+            localStorage.setItem('portfolio', JSON.stringify(portfolio));
+            document.getElementById('restore-file').value = ''; // inputのリセット
+            showToast("復元しました。株価を更新中...");
+            await refreshAllPrices(true);
+            renderTiles();
+            loadAINews();
+          }
+        } else {
+          showToast("無効なファイル形式です");
+        }
+      } catch (err) {
+        showToast("ファイルの読み込みに失敗しました");
+      }
+    };
+    reader.readAsText(file);
   }
   init();
 </script>
