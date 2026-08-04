@@ -315,7 +315,7 @@
     }
   }
 
-// アコーディオン形式＆1行コンパクト・矢印カラー・ダークモード完全対応版
+// アコーディオン形式＆1行コンパクト・矢印カラー（完全版）
   async function loadAINews() {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
@@ -325,37 +325,40 @@
           const list = document.getElementById('ai-news-list'); list.innerHTML = '';
           newsData.forEach(item => {
             const isOwned = portfolio.some(s => s.code === item.code);
-            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin: 0 4px;">保有</span>' : '';
+            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
             const stockName = meigaraDict[item.code]?.shortName || '---';
             
             // 日付を 08/04 形式に
             const shortDate = item.date.substring(5).replace('-', '/');
             
-            // 矢印の抽出とカラー判定
-            let arrow = '';
-            let arrowColor = '#333'; // デフォルトの色
+            // 矢印の抽出とクラス判定
+            let arrowHtml = '';
             let displayTitle = item.title;
             const arrowMatch = item.title.match(/[⤴⤵→]/);
             
             if (arrowMatch) {
-              arrow = arrowMatch[0];
+              const arrow = arrowMatch[0];
               displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
               
-              // 矢印の向きで色を変更
-              if (arrow === '⤴') arrowColor = '#388e3c'; // 緑（好調）
-              else if (arrow === '⤵') arrowColor = '#d32f2f'; // 赤（苦戦）
-              else if (arrow === '→') arrowColor = '#64b5f6'; // 青（横ばい・ダークモードでも見やすい青）
+              // 前日比と同じ .plus .minus クラスを割り当てることで色を完全一致させる
+              if (arrow === '⤴') {
+                arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              } else if (arrow === '⤵') {
+                arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              } else if (arrow === '→') {
+                arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              }
             }
             
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <!-- ▼ ここに .ai-news-title を付与して直接の色指定を削除しました ▼ -->
                 <div class="ai-news-title" style="line-height: 1.4;">
-                  <span class="ai-news-meta" style="font-size: 0.85em;">${shortDate}</span>
+                  <!-- 余計なクラスを外して自然なインライン表示に修正 -->
+                  <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
                   ${badgeHtml}
                   <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
-                  <span style="color: ${arrowColor}; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>
+                  ${arrowHtml}
                   <span style="font-weight: bold;">${displayTitle}</span>
                 </div>
               </div>
