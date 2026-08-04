@@ -94,6 +94,33 @@
   .disclaimer { font-size: 10px; color: #999; text-align: center; margin-top: 40px; margin-bottom: 20px; line-height: 1.5; }
   
   #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; }
+  /* ▼ トップへ戻るフッターロゴ ▼ */
+  .footer-logo { text-align: center; margin-top: 40px; margin-bottom: -20px; }
+  .footer-logo span { cursor: pointer; font-size: 1.2em; font-weight: bold; color: #1976d2; display: inline-block; padding: 10px; user-select: none; }
+  
+  /* ▼ ダークモード (端末の設定に自動連動) ▼ */
+  @media (prefers-color-scheme: dark) {
+    body { background-color: #121212; color: #e0e0e0; }
+    h1, .tile-name, .ai-news-title, .footer-logo span { color: #ffffff !important; }
+    .input-card, .stock-tile, .summary-card, .ai-news-card, .suggest-box { background-color: #1e1e1e !important; box-shadow: 0 2px 8px rgba(255,255,255,0.02); }
+    input[type="text"], input[type="number"], .calc-input, select { background-color: #2d2d2d; color: #fff; border-color: #444 !important; }
+    .ai-news-container { background: linear-gradient(135deg, #1a2a3a, #111d27); border-left-color: #64b5f6; }
+    .ai-news-container h2 { color: #64b5f6; }
+    .ai-news-toggle { color: #bbb; }
+    .tile-header, .details-content, .ai-news-body, .tool-area-divider { border-color: #444 !important; }
+    .details-stats, .calc-area { background-color: #2a2a2a; }
+    .stat-label, .tile-label, .ai-news-meta, .schedule-info { color: #bbb !important; }
+    .stat-value, .tile-value { color: #e0e0e0; }
+    .suggest-item { border-bottom-color: #444; }
+    .suggest-item:hover { background-color: #333; }
+    .delete-btn { color: #888; }
+    .delete-btn:hover { color: #eee; }
+    .details-btn { background: #2a3a4a; color: #64b5f6; }
+    .ai-news-summary { color: #ccc; }
+    .ai-news-link { color: #64b5f6; }
+    .plus { color: #66bb6a !important; }
+    .minus { color: #ef5350 !important; }
+  }
 </style>
 </head>
 <body>
@@ -137,9 +164,10 @@
     </div>
   </div>
 </div>
+<!-- ▼ ツールエリア（並べ替え・バックアップ） ▼ -->
 <div class="summary-card" style="margin-bottom: 20px;">
   <div style="text-align: center; margin-bottom: 12px;">
-    <span style="font-size: 13px; font-weight: bold; color: #2c3e50; margin-right: 8px;">🔄 並べ替え:</span>
+    <span style="font-size: 13px; font-weight: bold; margin-right: 8px;">🔄 並べ替え:</span>
     <select id="sort-select" onchange="sortPortfolio()" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; outline: none;">
       <option value="default">選択してください</option>
       <option value="code">銘柄コード順</option>
@@ -148,13 +176,20 @@
       <option value="dod_change">前日比(%)が高い順</option>
     </select>
   </div>
-  <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; border-top: 1px dashed #eee; padding-top: 12px;">
-    <button onclick="backupPortfolio()" style="padding: 8px 16px; background-color: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">💾 バックアップ (保存)</button>
-    <button onclick="document.getElementById('restore-file').click()" style="padding: 8px 16px; background-color: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">📂 復元 (読込)</button>
+  <!-- ボタンサイズを「株価を最新に更新」と同じ(padding: 6px 14px; font-size: 12px;)に統一 -->
+  <div class="tool-area-divider" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; border-top: 1px dashed #eee; padding-top: 12px;">
+    <button onclick="backupPortfolio()" style="padding: 6px 14px; background-color: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">バックアップ</button>
+    <button onclick="document.getElementById('restore-file').click()" style="padding: 6px 14px; background-color: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">読込</button>
     <input type="file" id="restore-file" accept=".json" style="display: none;" onchange="restorePortfolio(event)">
   </div>
 </div>
-<!-- 免責事項 -->
+
+<!-- ▼ フッター（トップへ戻る） ▼ -->
+<div class="footer-logo">
+  <span onclick="window.scrollTo({top: 0, behavior: 'smooth'})">📈 Port4rio</span>
+</div>
+
+<!-- ▼ 免責事項 ▼ -->
 <div class="disclaimer">
   当サイトの情報は参考であり投資の最終判断は自己責任でお願いします。<br>
   取得している株価・決算予定・AI要約等の正確性は保証されません。
