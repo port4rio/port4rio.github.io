@@ -2,9 +2,10 @@ name: AI Earnings Monitor
 
 on:
   schedule:
-    - cron: '0 3 * * 1-5'   # 平日12:00 (JST)
-    - cron: '30 6 * * 1-5'  # 平日15:30 (JST)
-    - cron: '30 8 * * 1-5'  # 平日17:30 (JST)
+    # 00分・30分の大渋滞が起きる「1分前」に滑り込む最強のシフト
+    - cron: '59 2 * * 1-5'  # 11:59 (JST)
+    - cron: '29 6 * * 1-5'  # 15:29 (JST)
+    - cron: '29 8 * * 1-5'  # 17:29 (JST)
   workflow_dispatch: # 手動実行ボタン
 
 jobs:
