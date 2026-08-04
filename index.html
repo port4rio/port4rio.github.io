@@ -315,7 +315,7 @@
     }
   }
 
-// アコーディオン形式＆1行コンパクト・矢印カラー対応版
+// アコーディオン形式＆1行コンパクト・矢印カラー・ダークモード完全対応版
   async function loadAINews() {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
@@ -344,14 +344,15 @@
               // 矢印の向きで色を変更
               if (arrow === '⤴') arrowColor = '#388e3c'; // 緑（好調）
               else if (arrow === '⤵') arrowColor = '#d32f2f'; // 赤（苦戦）
-              else if (arrow === '→') arrowColor = '#1976d2'; // 青（横ばい）
+              else if (arrow === '→') arrowColor = '#64b5f6'; // 青（横ばい・ダークモードでも見やすい青）
             }
             
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <div style="font-size: 1em; line-height: 1.4; color: #2c3e50;">
-                  <span style="color: #7f8c8d; font-size: 0.85em;">${shortDate}</span>
+                <!-- ▼ ここに .ai-news-title を付与して直接の色指定を削除しました ▼ -->
+                <div class="ai-news-title" style="line-height: 1.4;">
+                  <span class="ai-news-meta" style="font-size: 0.85em;">${shortDate}</span>
                   ${badgeHtml}
                   <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
                   <span style="color: ${arrowColor}; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>
