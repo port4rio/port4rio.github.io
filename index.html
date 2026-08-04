@@ -264,7 +264,7 @@
     }
   }
 
-// アコーディオン形式＆デザイン調整版
+// アコーディオン形式＆1行コンパクト・矢印カラー対応版
   async function loadAINews() {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
@@ -274,30 +274,38 @@
           const list = document.getElementById('ai-news-list'); list.innerHTML = '';
           newsData.forEach(item => {
             const isOwned = portfolio.some(s => s.code === item.code);
-            const badgeHtml = isOwned ? '<span class="badge-owned">保有</span>' : '';
+            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin: 0 4px;">保有</span>' : '';
             const stockName = meigaraDict[item.code]?.shortName || '---';
             
-            // 日付から[]を削除し 08/04 形式に
+            // 日付を 08/04 形式に
             const shortDate = item.date.substring(5).replace('-', '/');
             
-            // タイトルから矢印（⤴⤵→）を抜き出して分離する
+            // 矢印の抽出とカラー判定
             let arrow = '';
+            let arrowColor = '#333'; // デフォルトの色
             let displayTitle = item.title;
             const arrowMatch = item.title.match(/[⤴⤵→]/);
+            
             if (arrowMatch) {
               arrow = arrowMatch[0];
               displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
+              
+              // 矢印の向きで色を変更
+              if (arrow === '⤴') arrowColor = '#388e3c'; // 緑（好調）
+              else if (arrow === '⤵') arrowColor = '#d32f2f'; // 赤（苦戦）
+              else if (arrow === '→') arrowColor = '#1976d2'; // 青（横ばい）
             }
             
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <div class="ai-news-meta" style="align-items: baseline;">
-                  <span>${shortDate}</span>
+                <div style="font-size: 1em; line-height: 1.4; color: #2c3e50;">
+                  <span style="color: #7f8c8d; font-size: 0.85em;">${shortDate}</span>
                   ${badgeHtml}
-                  <span style="color: #2c3e50; font-weight: bold; font-size: 1.1em; margin-left: 4px;">${stockName} <span style="color: #d32f2f;">${arrow}</span></span>
+                  <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
+                  <span style="color: ${arrowColor}; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>
+                  <span style="font-weight: bold;">${displayTitle}</span>
                 </div>
-                <div class="ai-news-title" style="margin-top: 4px;">${displayTitle}</div>
               </div>
               <div class="ai-news-body">
                 <div class="ai-news-summary">${item.summary}</div>
