@@ -99,6 +99,12 @@
   .footer-logo span { cursor: pointer; font-size: 1.2em; font-weight: bold; color: #1976d2; display: inline-block; padding: 10px; user-select: none; }
   
   /* ▼ ダークモード (端末の設定に自動連動) ▼ */
+  /* ▼ AI秘書 ▼ */
+  .ai-secretary-container { position: fixed; bottom: 15px; left: 15px; z-index: 1000; display: flex; align-items: flex-end; gap: 10px; max-width: calc(100vw - 30px); pointer-events: none; }
+  .ai-mascot { width: 50px; height: 50px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 2px solid #1976d2; pointer-events: auto; }
+  .ai-bubble { background: #fff; padding: 12px 25px 12px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-size: 13px; position: relative; border: 1px solid #eee; pointer-events: auto; line-height: 1.5; }
+  .ai-bubble::before { content: ""; position: absolute; bottom: 15px; left: -7px; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 7px solid #fff; }
+  .ai-bubble-close { position: absolute; top: 4px; right: 6px; font-size: 12px; color: #999; cursor: pointer; background: none; border: none; }
   @media (prefers-color-scheme: dark) {
     body { background-color: #121212; color: #e0e0e0; }
     h1, .tile-name, .ai-news-title, .footer-logo span { color: #ffffff !important; }
@@ -121,6 +127,9 @@
     .ai-news-link { color: #64b5f6; }
     .plus { color: #66bb6a !important; }
     .minus { color: #ef5350 !important; }
+    .ai-mascot { background: #1e1e1e; border-color: #64b5f6; }
+    .ai-bubble { background: #1e1e1e; border-color: #444; color: #e0e0e0; }
+    .ai-bubble::before { border-right-color: #1e1e1e; }
   }
 </style>
 </head>
@@ -523,6 +532,7 @@
       pieChart.style.background = `conic-gradient(#eee 0 100%)`;
       pieChart.title = "銘柄を登録すると内訳グラフが表示されます";
     }
+    updateAISecretary(totalValue, totalProfit);
   }
 
   async function init() {
@@ -614,6 +624,46 @@ function sortPortfolio() {
     reader.readAsText(file);
   }
   init();
+  function updateAISecretary(totalVal, totalProf) {
+    const textEl = document.getElementById('ai-secretary-text');
+    if (!textEl) return;
+
+    // ① 初めての客（ポートフォリオが空）
+    if (portfolio.length === 0) {
+      textEl.innerHTML = "初めまして！Port4rioへようこそ✨<br>まずは上の検索窓から銘柄を登録してみてね🐼";
+      document.getElementById('ai-secretary').style.display = 'flex';
+      return;
+    }
+
+    // ② 銘柄は入れたが、株数・買値が入っていない
+    if (totalVal === 0) {
+      textEl.innerHTML = "登録ありがとう！<br>株数と買値を入力すると損益を自動計算するよ📊";
+      document.getElementById('ai-secretary').style.display = 'flex';
+      return;
+    }
+
+    // ③ 診断ロジック（含み益か含み損かでセリフが変化）
+    let message = `現在 <b>${portfolio.length}</b> 銘柄を保有中だね。<br>`;
+    if (totalProf > 0) {
+      message += `全体で <span class="plus">+${totalProf.toLocaleString()}円</span> の含み益！👏<br>この調子で見守りましょう✨`;
+    } else if (totalProf < 0) {
+      message += `全体で <span class="minus">${totalProf.toLocaleString()}円</span> の含み損💦<br>相場は波があるから焦らずいこう🐼`;
+    } else {
+      message += `現在の損益はトントン。<br>これからの値動きに期待だね📈`;
+    }
+    
+    textEl.innerHTML = message;
+    document.getElementById('ai-secretary').style.display = 'flex'; // ✕で消していても更新時に再表示
+  }
 </script>
+<!-- ▼ AI秘書（フローティング） ▼ -->
+<div id="ai-secretary" class="ai-secretary-container">
+  <!-- パンダの絵文字を仮置きしています。後で好きな画像(imgタグ)に変更可能です -->
+  <div class="ai-mascot" id="ai-mascot-img">🐼</div>
+  <div class="ai-bubble">
+    <button class="ai-bubble-close" onclick="document.getElementById('ai-secretary').style.display='none'">✕</button>
+    <span id="ai-secretary-text">読み込み中...</span>
+  </div>
+</div>
 </body>
 </html>
