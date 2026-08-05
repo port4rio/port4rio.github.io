@@ -210,11 +210,12 @@ def summarize_pdfs(pdf_list):
     return news_data
 
 # ==========================================
-# 4. メイン処理 (過去ニュースの維持 + マージ)
+# 4. メイン処理 (過去ニュースの維持 + 重複スキップ + マージ)
 # ==========================================
 if __name__ == "__main__":
     pdfs_to_process = get_tdnet_pdfs(todays_codes)
     
+    # ① 既存のニュースを読み込む
     existing_news = []
     if os.path.exists("ai_news.json"):
         with open("ai_news.json", "r", encoding="utf-8") as f:
@@ -224,10 +225,22 @@ if __name__ == "__main__":
     seven_days_ago = (today - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
     existing_news = [n for n in existing_news if n['date'] >= seven_days_ago]
 
+    # ② 【重要】今日すでに処理済みの銘柄コードをリストアップ
+    today_str_json = today.strftime('%Y-%m-%d')
+    processed_codes_today = {n['code'] for n in existing_news if n['date'] == today_str_json}
+    
+    # ③ まだ処理していない新しいPDFだけを抽出
+    unprocessed_pdfs = [p for p in pdfs_to_process if p['code'] not in processed_codes_today]
+    
+    print(f"本日発見されたPDF: {len(pdfs_to_process)}件")
+    print(f"すでに処理済みでスキップ: {len(pdfs_to_process) - len(unprocessed_pdfs)}件")
+    print(f"今回新しくAI要約する件数: {len(unprocessed_pdfs)}件")
+
     new_news = []
-    if pdfs_to_process:
-        new_news = summarize_pdfs(pdfs_to_process)
+    if unprocessed_pdfs:
+        new_news = summarize_pdfs(unprocessed_pdfs)
         
+    # ④ 既存データと新規データを合体させる
     news_dict = { n['code']: n for n in existing_news }
     for n in new_news:
         news_dict[n['code']] = n
