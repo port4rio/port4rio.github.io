@@ -20,7 +20,7 @@
   .ai-news-toggle { font-size: 0.8em; color: #666; cursor: pointer; font-weight: normal; padding: 4px; }
   
   /* スマホ等で長くなりすぎないように高さを制限してスクロール可能に */
-  #ai-news-list { max-height: 35vh; overflow-y: auto; padding-right: 5px; }
+  #ai-news-list { overflow-y: auto; padding-right: 5px; transition: max-height 0.3s ease-in-out; }
   
   .ai-news-card { background: #fff; padding: 12px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   
@@ -211,6 +211,11 @@
   let meigaraDict = {};
   let upcomingSchedule = {};
   
+  // ▼ 追加：制御用変数 ▼
+  let aiNewsState = 1; // 0:閉じる, 1:中間, 2:広げる
+  let isFetchingPrices = false; // 株価取得中フラグ
+  let isSecretaryClosed = false; // 秘書を閉じたかフラグ
+  
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
   
@@ -303,25 +308,42 @@
     return null;
   }
 
+// ▼ 株価の一括更新（更新中の秘書ポップアップを防止） ▼
   async function refreshAllPrices(forceRefresh = false) {
     if (portfolio.length === 0) return;
     if (forceRefresh) showToast("株価を更新中...");
+    
+    isFetchingPrices = true; // 更新中フラグON（秘書を黙らせる）
+    
     for (let i = 0; i < portfolio.length; i++) {
       const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
       if (data) { currentPrices[portfolio[i].code] = data; renderTiles(); }
     }
+    
+    isFetchingPrices = false; // 更新完了
     if (forceRefresh) showToast("完了しました");
+    
+    // 最後に1回だけ秘書を呼ぶ
+    renderTiles();
   }
 
+// ▼ AIサマリーの3段階トグル（閉じる -> 中間 -> 広げる） ▼
   function toggleAINews() {
     const list = document.getElementById('ai-news-list');
     const toggle = document.getElementById('ai-news-toggle');
-    if (list.style.display === 'none') {
-      list.style.display = 'block';
-      toggle.innerText = '▲ 閉じる';
-    } else {
+    aiNewsState = (aiNewsState + 1) % 3;
+    
+    if (aiNewsState === 0) {
       list.style.display = 'none';
       toggle.innerText = '▼ 開く';
+    } else if (aiNewsState === 1) {
+      list.style.display = 'block';
+      list.style.maxHeight = '35vh';
+      toggle.innerText = '▲ 中間 (次:広げる)';
+    } else {
+      list.style.display = 'block';
+      list.style.maxHeight = '65vh'; // 中間の約180%の高さ
+      toggle.innerText = '▲ 広げる (次:閉じる)';
     }
   }
 
@@ -624,44 +646,67 @@ function sortPortfolio() {
     reader.readAsText(file);
   }
   init();
+// ▼ AI秘書の頭脳（決算通知・ランキング・挨拶変更） ▼
   function updateAISecretary(totalVal, totalProf) {
+    // 株価取得中、またはユーザーが手動で閉じた場合はスキップ
+    if (isFetchingPrices || isSecretaryClosed) return; 
+
     const textEl = document.getElementById('ai-secretary-text');
     if (!textEl) return;
 
-    // ① 初めての客（ポートフォリオが空）
+    // ① 新規訪問者への案内
     if (portfolio.length === 0) {
-      textEl.innerHTML = "初めまして！Port4rioへようこそ✨<br>まずは上の検索窓から銘柄を登録してみてね🐼";
+      textEl.innerHTML = "Port4rioへようこそ！まずは上の検索窓から銘柄を登録してみてね🤖<br><span style='font-size:0.9em; color:#666;'>登録すると、自動で損益計算や決算予定をお知らせするよ✨</span>";
       document.getElementById('ai-secretary').style.display = 'flex';
       return;
     }
 
-    // ② 銘柄は入れたが、株数・買値が入っていない
-    if (totalVal === 0) {
-      textEl.innerHTML = "登録ありがとう！<br>株数と買値を入力すると損益を自動計算するよ📊";
-      document.getElementById('ai-secretary').style.display = 'flex';
-      return;
-    }
-
-    // ③ 診断ロジック（含み益か含み損かでセリフが変化）
-    let message = `現在 <b>${portfolio.length}</b> 銘柄を保有中だね。<br>`;
-    if (totalProf > 0) {
-      message += `全体で <span class="plus">+${totalProf.toLocaleString()}円</span> の含み益！👏<br>この調子で見守りましょう✨`;
-    } else if (totalProf < 0) {
-      message += `全体で <span class="minus">${totalProf.toLocaleString()}円</span> の含み損💦<br>相場は波があるから焦らずいこう🐼`;
-    } else {
-      message += `現在の損益はトントン。<br>これからの値動きに期待だね📈`;
-    }
+    // ② メッセージの組み立て
+    let message = "";
     
+    // 決算予定のピックアップ
+    let earningsAlerts = [];
+    portfolio.forEach(stock => {
+        if (upcomingSchedule[stock.code]) {
+            earningsAlerts.push(`<b>${stock.name}</b>(${upcomingSchedule[stock.code].date})`);
+        }
+    });
+
+    if (earningsAlerts.length > 0) {
+        message += `📅 <b>決算接近中！</b><br>${earningsAlerts.join('、 ')}の発表が控えてるよ！要チェックだね🤖<br><hr style="border-top:1px dashed #ccc; margin:8px 0;">`;
+    }
+
+    // 評価額ランキングの生成
+    let validStocks = portfolio.filter(s => currentPrices[s.code] && currentPrices[s.code].price && s.shares > 0);
+    validStocks.sort((a, b) => (currentPrices[b.code].price * b.shares) - (currentPrices[a.code].price * a.shares));
+
+    // 損益の総評
+    if (totalVal > 0) {
+      if (totalProf > 0) {
+        message += `全体で <span class="plus">+${totalProf.toLocaleString()}円</span> の含み益！👏<br>`;
+      } else if (totalProf < 0) {
+        message += `全体で <span class="minus">${totalProf.toLocaleString()}円</span> の含み損💦<br>`;
+      } else {
+        message += `現在の損益はトントン。<br>`;
+      }
+
+      // ランキングの表示
+      if (validStocks.length >= 2) {
+          message += `<span style="font-size:0.85em; color:#666;">👑 評価額TOP3: 1位 ${validStocks[0].name} / 2位 ${validStocks[1].name}${validStocks.length > 2 ? ` / 3位 ${validStocks[2].name}` : ''}</span>`;
+      }
+    } else {
+      message += "登録ありがとう！<br>株数と買値を入力すると損益を自動計算するよ📊";
+    }
+
     textEl.innerHTML = message;
-    document.getElementById('ai-secretary').style.display = 'flex'; // ✕で消していても更新時に再表示
+    document.getElementById('ai-secretary').style.display = 'flex';
   }
 </script>
 <!-- ▼ AI秘書（フローティング） ▼ -->
 <div id="ai-secretary" class="ai-secretary-container">
-  <!-- パンダの絵文字を仮置きしています。後で好きな画像(imgタグ)に変更可能です -->
-  <div class="ai-mascot" id="ai-mascot-img">🐼</div>
+  <div class="ai-mascot" id="ai-mascot-img">🤖</div>
   <div class="ai-bubble">
-    <button class="ai-bubble-close" onclick="document.getElementById('ai-secretary').style.display='none'">✕</button>
+    <button class="ai-bubble-close" onclick="isSecretaryClosed = true; document.getElementById('ai-secretary').style.display='none'">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
   </div>
 </div>
