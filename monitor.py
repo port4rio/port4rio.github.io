@@ -76,7 +76,7 @@ def get_tdnet_pdfs(target_codes):
     base_url = "https://www.release.tdnet.info/inbs/"
     found_pdfs = []
     
-    for page_num in range(1, 10):
+    for page_num in range(1, 18):
         page_str = str(page_num).zfill(3)
         tdnet_url = f"https://www.release.tdnet.info/inbs/I_list_{page_str}_{today_str_tdnet}.html"
         
