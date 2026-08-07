@@ -339,11 +339,11 @@
     } else if (aiNewsState === 1) {
       list.style.display = 'block';
       list.style.maxHeight = '35vh';
-      toggle.innerText = '▲ 中間 (次:広げる)';
+      toggle.innerText = '▼ 広げる';
     } else {
       list.style.display = 'block';
       list.style.maxHeight = '65vh'; // 中間の約180%の高さ
-      toggle.innerText = '▲ 広げる (次:閉じる)';
+      toggle.innerText = '▲ 閉じる';
     }
   }
 
@@ -402,6 +402,10 @@
             list.appendChild(card);
           });
           document.getElementById('ai-news-container').style.display = 'block';
+          
+          // ▼ 追加：初期状態を強制的に「中間サイズ」にセットする ▼
+          document.getElementById('ai-news-list').style.maxHeight = '35vh';
+          document.getElementById('ai-news-toggle').innerText = '▼ 広げる';
         }
       }
     } catch (e) {}
