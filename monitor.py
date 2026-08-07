@@ -95,7 +95,11 @@ def get_tdnet_pdfs(target_codes):
                 row_text = tr.get_text()
                 matched_code = next((c for c in target_codes if c in row_text), None)
                 
-                if matched_code and "決算短信" in row_text:
+                # ▼ 弾きたいノイズのリストを定義
+                exclude_words = ["訂正", "レビュー", "補足", "お知らせ"]
+                
+                # ▼ 「決算短信」が含まれ、かつ除外リストの言葉が1つも入っていない場合のみ処理
+                if matched_code and "決算短信" in row_text and not any(word in row_text for word in exclude_words):
                     pdf_link = tr.find('a', href=re.compile(r'\.pdf$'))
                     if pdf_link:
                         found_pdfs.append({
