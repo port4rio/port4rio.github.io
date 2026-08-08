@@ -128,7 +128,8 @@
     .plus { color: #66bb6a !important; }
     .minus { color: #ef5350 !important; }
     .ai-mascot { background: #1e1e1e; border-color: #64b5f6; }
-    .ai-bubble { background: #1e1e1e; border-color: #444; color: #e0e0e0; }
+    /* 淡いピンク(#ffcce0)にして、水色と合うネオンのような光(text-shadow)を追加 */
+    .ai-bubble { background: #1e1e1e; border-color: #444; color: #ffcce0; text-shadow: 0 0 5px rgba(255, 204, 224, 0.7), 0 0 10px rgba(255, 204, 224, 0.3); }
     .ai-bubble::before { border-right-color: #1e1e1e; }
     #ai-news-list { scrollbar-color: #555 transparent; scrollbar-width: thin; }
     #ai-news-list::-webkit-scrollbar { width: 6px; }
@@ -215,6 +216,10 @@
   let currentPrices = {};
   let meigaraDict = {};
   let upcomingSchedule = {};
+  let secretaryPages = [];
+  let secretaryPageIdx = 0;
+  let secretaryTimeout = null;
+  let currentTypewriterId = 0;
   
   // ▼ 追加：制御用変数 ▼
   let aiNewsState = 1; // 0:閉じる, 1:中間, 2:広げる
@@ -316,7 +321,45 @@
     if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
     return null;
   }
+// ▼ ドラクエ風タイピング機能（HTMLタグを壊さずに0.03秒で表示） ▼
+  async function typeWriter(html, id) {
+    const el = document.getElementById('ai-secretary-text');
+    if (!el) return;
+    el.innerHTML = '';
+    let i = 0, isTag = false, text = '';
+    
+    while (i < html.length) {
+      if (currentTypewriterId !== id || isSecretaryClosed) return; // 中断処理
+      let char = html.charAt(i);
+      text += char;
+      if (char === '<') isTag = true;
+      if (char === '>') isTag = false;
+      
+      el.innerHTML = text;
+      i++;
+      // タグの中身以外の文字のときだけ 0.03秒 (30ms) 待つ
+      if (!isTag && char !== '>') {
+        await new Promise(r => setTimeout(r, 30));
+      }
+    }
+  }
 
+  // ▼ ページ送り＆ループ機能（3秒待機） ▼
+  async function playSecretaryLoop(id) {
+    if (currentTypewriterId !== id || isSecretaryClosed || secretaryPages.length === 0) return;
+    
+    const html = secretaryPages[secretaryPageIdx];
+    await typeWriter(html, id); // タイピング実行
+    
+    // 打ち終わった後、まだ自分が最新の処理なら3秒待って次へ
+    if (currentTypewriterId === id && !isSecretaryClosed) {
+      secretaryTimeout = setTimeout(() => {
+        secretaryPageIdx = (secretaryPageIdx + 1) % secretaryPages.length; // 最後の次は0に戻る
+        playSecretaryLoop(id);
+      }, 3000);
+    }
+  }
+  
 // ▼ 株価の一括更新（更新中の秘書ポップアップを防止） ▼
   async function refreshAllPrices(forceRefresh = false) {
     if (portfolio.length === 0) return;
@@ -659,60 +702,59 @@ function sortPortfolio() {
     reader.readAsText(file);
   }
   init();
-// ▼ AI秘書の頭脳（決算通知・ランキング・挨拶変更） ▼
+// ▼ AI秘書の頭脳（ページ切り替え対応版） ▼
   function updateAISecretary(totalVal, totalProf) {
-    // 株価取得中、またはユーザーが手動で閉じた場合はスキップ
-    if (isFetchingPrices || isSecretaryClosed) return; 
+    if (isFetchingPrices || isSecretaryClosed) return;
 
-    const textEl = document.getElementById('ai-secretary-text');
-    if (!textEl) return;
+    // 前のタイピングや待機をキャンセルしてリセット
+    clearTimeout(secretaryTimeout);
+    currentTypewriterId++;
+    const runId = currentTypewriterId;
+    secretaryPages = [];
+    secretaryPageIdx = 0;
 
-    // ① 新規訪問者への案内
     if (portfolio.length === 0) {
-      textEl.innerHTML = "Port4rioへようこそ！まずは上の検索窓から銘柄を登録してみてね🤖<br>登録すると、自動で損益計算や決算予定をお知らせするよ✨";
-      document.getElementById('ai-secretary').style.display = 'flex';
-      return;
-    }
-
-    // ② メッセージの組み立て
-    let message = "";
-    
-    // 決算予定のピックアップ
-    let earningsAlerts = [];
-    portfolio.forEach(stock => {
-        if (upcomingSchedule[stock.code]) {
-            earningsAlerts.push(`<b>${stock.name}</b>(${upcomingSchedule[stock.code].date})`);
-        }
-    });
-
-    if (earningsAlerts.length > 0) {
-        message += `📅 <b>決算接近中！</b><br>${earningsAlerts.join('、 ')}の発表が控えてるよ！要チェックだね🤖<br><hr style="border-top:1px dashed #ccc; margin:8px 0;">`;
-    }
-
-    // 評価額ランキングの生成
-    let validStocks = portfolio.filter(s => currentPrices[s.code] && currentPrices[s.code].price && s.shares > 0);
-    validStocks.sort((a, b) => (currentPrices[b.code].price * b.shares) - (currentPrices[a.code].price * a.shares));
-
-    // 損益の総評
-    if (totalVal > 0) {
-      if (totalProf > 0) {
-        message += `全体で <span class="plus">+${totalProf.toLocaleString()}円</span> の含み益！👏<br>`;
-      } else if (totalProf < 0) {
-        message += `全体で <span class="minus">${totalProf.toLocaleString()}円</span> の含み損💦<br>`;
-      } else {
-        message += `現在の損益はトントン。<br>`;
-      }
-
-      // ランキングの表示
-      if (validStocks.length >= 2) {
-          message += `<span style="font-size:0.85em; color:#666;">👑 評価額TOP3: 1位 ${validStocks[0].name} / 2位 ${validStocks[1].name}${validStocks.length > 2 ? ` / 3位 ${validStocks[2].name}` : ''}</span>`;
-      }
+      secretaryPages.push("Port4rioへようこそ！<br>まずは上の検索窓から<br>銘柄を登録してみてね🤖");
+    } else if (totalVal === 0) {
+      secretaryPages.push("登録ありがとう！<br>株数と買値を入力すると<br>損益を自動計算するよ📊");
     } else {
-      message += "登録ありがとう！<br>株数と買値を入力すると損益を自動計算するよ📊";
+      // ① ページ1: 決算接近中
+      let earningsAlerts = [];
+      portfolio.forEach(stock => {
+        if (upcomingSchedule[stock.code]) {
+          earningsAlerts.push(`<b>${stock.name}</b> (${upcomingSchedule[stock.code].date})`);
+        }
+      });
+      if (earningsAlerts.length > 0) {
+        secretaryPages.push(`📅 <b>決算接近中！</b><br>${earningsAlerts.join('<br>')}<br>発表が控えてるよ！🤖`);
+      }
+
+      // ② ページ2: 評価額ランキング (最大5件)
+      // 元のインデックス(タイル色用)を保持しつつ、評価額でソート
+      let validStocks = portfolio.map((s, idx) => {
+        return { ...s, originalIndex: idx, val: currentPrices[s.code] ? (currentPrices[s.code].price * s.shares) : 0 };
+      }).filter(s => s.val > 0);
+      
+      validStocks.sort((a, b) => b.val - a.val);
+      
+      if (validStocks.length > 0) {
+        let rankHtml = `👑 <b>評価額ランキング</b><br>`;
+        const top5 = validStocks.slice(0, 5);
+        
+        top5.forEach(s => {
+          const color = pColors[s.originalIndex % pColors.length]; // タイルと同じ色を取得
+          const percent = ((s.val / totalVal) * 100).toFixed(1); // 全体に対する割合(%)
+          rankHtml += `<span style="color:${color};">●</span>${s.name} ${Math.floor(s.val).toLocaleString()}円 (${percent}%)<br>`;
+        });
+        secretaryPages.push(rankHtml);
+      }
     }
 
-    textEl.innerHTML = message;
-    document.getElementById('ai-secretary').style.display = 'flex';
+    // ページが存在すればループ再生スタート
+    if (secretaryPages.length > 0) {
+      document.getElementById('ai-secretary').style.display = 'flex';
+      playSecretaryLoop(runId);
+    }
   }
 </script>
 <!-- ▼ AI秘書（フローティング） ▼ -->
