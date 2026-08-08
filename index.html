@@ -272,9 +272,13 @@
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        let code = cols[1]; if (!code) continue;
-        if (code.length === 5 && code.endsWith('0')) code = code.substring(0, 4);
-        meigaraDict[code] = { shortName: cols[3]||cols[2]||'', searchName: normalizeForSearch(cols[2]||''), searchShortName: normalizeForSearch(cols[3]||cols[2]||'') };
+        // 1列目(0)がコード、2列目(1)が名称、3列目(2)が略称
+        let code = cols[0]; if (!code) continue;
+        meigaraDict[code] = { 
+          shortName: cols[2] || cols[1] || '', 
+          searchName: normalizeForSearch(cols[1] || ''), 
+          searchShortName: normalizeForSearch(cols[2] || cols[1] || '') 
+        };
       }
       searchInput.placeholder = "銘柄検索 (2文字以上)";
     } catch (e) { searchInput.placeholder = "辞書読込エラー"; }
