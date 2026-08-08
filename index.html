@@ -342,7 +342,7 @@
       i++;
       // タグの中身以外の文字のときだけ 0.03秒 (30ms) 待つ
       if (!isTag && char !== '>') {
-        await new Promise(r => setTimeout(r, 30));
+        await new Promise(r => setTimeout(r, 20));
       }
     }
   }
@@ -382,7 +382,7 @@
     renderTiles();
   }
 
-// ▼ AIサマリーの3段階トグル（閉じる -> 中間 -> 広げる） ▼
+// ▼ AIサマリーの3段階トグル（中間 -> 広げる -> 閉じる） ▼
   function toggleAINews() {
     const list = document.getElementById('ai-news-list');
     const toggle = document.getElementById('ai-news-toggle');
