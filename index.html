@@ -342,7 +342,7 @@
       i++;
       // タグの中身以外の文字のときだけ 0.03秒 (30ms) 待つ
       if (!isTag && char !== '>') {
-        await new Promise(r => setTimeout(r, 20));
+        await new Promise(r => setTimeout(r, 30));
       }
     }
   }
