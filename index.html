@@ -147,11 +147,8 @@
 <!-- AIニュースコンテナ -->
 <div id="ai-news-container" class="ai-news-container">
   <h2>
-    <span style="display:flex; align-items:center; gap:6px;">
-      ✨ AI決算サマリー
-      <span id="ai-news-sort-btn" onclick="toggleNewsSort()" style="font-size: 0.75em; cursor: pointer; text-decoration: underline; color: #888; margin-left: 8px;">[⇅新着順]</span>
-    </span>
-    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼ 広げる</span>
+    <span style="display:flex; align-items:center; gap:6px;">✨ AI決算サマリー</span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▲ 閉じる</span>
   </h2>
   <div id="ai-news-list"></div>
 </div>
@@ -227,7 +224,6 @@
   let secLastProf = 0;
   
   // ▼ 追加：制御用変数 ▼
-  let isNewsSortOwned = false; // trueなら保有銘柄を一番上に
   let aiNewsState = 1; // 0:閉じる, 1:中間, 2:広げる
   let isFetchingPrices = false; // 株価取得中フラグ
   let isSecretaryClosed = false; // 秘書を閉じたかフラグ
@@ -404,14 +400,7 @@
       toggle.innerText = '▲ 閉じる';
     }
   }
-// ▼ AIサマリーの「新着順/保有優先」切り替え ▼
-  function toggleNewsSort() {
-    isNewsSortOwned = !isNewsSortOwned;
-    const btn = document.getElementById('ai-news-sort-btn');
-    btn.innerText = isNewsSortOwned ? '[★保有優先]' : '[⇅新着順]';
-    // ボタンを押したら即座にリストを再構築する
-    loadAINews(); 
-  }
+
 // アコーディオン形式＆1行コンパクト・矢印カラー（完全版）
   async function loadAINews() {
     try {
@@ -419,17 +408,7 @@
       if (response.ok) {
         const newsData = await response.json();
         if (newsData && newsData.length > 0) {
-          
-          // ▼ 追加：保有優先モードがONなら、保有銘柄をリストの上に集める ▼
-          if (isNewsSortOwned) {
-            newsData.sort((a, b) => {
-              const aOwned = portfolio.some(s => s.code === a.code);
-              const bOwned = portfolio.some(s => s.code === b.code);
-              if (aOwned && !bOwned) return -1; // aだけ保有なら上へ
-              if (!aOwned && bOwned) return 1;  // bだけ保有なら下へ
-              return 0; // どちらも同じ（両方保有、または両方未保有）なら元の日付順を維持
-            });
-          }
+          const list = document.getElementById('ai-news-list'); list.innerHTML = '';
           newsData.forEach(item => {
             const isOwned = portfolio.some(s => s.code === item.code);
             const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
