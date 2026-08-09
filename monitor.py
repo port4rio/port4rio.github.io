@@ -30,41 +30,47 @@ print(f"【処理開始】日本時間: {today.strftime('%Y-%m-%d %H:%M:%S')}")
 # 1. 決算スケジュールの取得と保存
 # ==========================================
 print("トレーダーズ・ウェブから決算スケジュールを取得中...")
-url = "https://www.traders.co.jp/market_jp/earnings_calendar"
 headers = {'User-Agent': 'Mozilla/5.0'}
 
 schedule_data = {}
 todays_codes = []
 
 try:
-    response = requests.get(url, headers=headers, timeout=10)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    
-    current_date = None
-    for tr in soup.find_all('tr'):
-        text = tr.get_text(separator=' ', strip=True)
-        d_match = re.search(r'\b(\d{1,2}/\d{1,2})\b', text)
-        if d_match:
-            current_date = d_match.group(1)
-            
-        c_match = re.search(r'\b([1-9][0-9A-Z]{3})\b', text)
-        t_match = re.search(r'\b(\d{1,2}:\d{2})\b', text)
+    # ▼ 1ページ目と2ページ目を順番に処理するためのループ
+    for page in [1, 2]:
+        target_url = f"https://www.traders.co.jp/market_jp/earnings_calendar/all/all_ex_etf/{page}"
+        print(f" - {page}ページ目を取得中: {target_url}")
         
-        if c_match and current_date:
-            code = c_match.group(1)
-            time_str = t_match.group(1) if t_match else "-"
-            schedule_data[code] = {"date": current_date, "time": time_str}
-            
-            if current_date in today_patterns:
-                todays_codes.append(code)
+        response = requests.get(target_url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        current_date = None
+        for tr in soup.find_all('tr'):
+            text = tr.get_text(separator=' ', strip=True)
+            d_match = re.search(r'\b(\d{1,2}/\d{1,2})\b', text)
+            if d_match:
+                current_date = d_match.group(1)
                 
+            c_match = re.search(r'\b([1-9][0-9A-Z]{3})\b', text)
+            t_match = re.search(r'\b(\d{1,2}:\d{2})\b', text)
+            
+            if c_match and current_date:
+                code = c_match.group(1)
+                time_str = t_match.group(1) if t_match else "-"
+                schedule_data[code] = {"date": current_date, "time": time_str}
+                
+                if current_date in today_patterns:
+                    todays_codes.append(code)
+        
+        # ▼ 【超重要】相手サーバーへの負荷を下げるため、次のページにいく前に1秒待機
+        time.sleep(1)
+            
     todays_codes = list(set(todays_codes))
     with open("schedule.json", "w", encoding="utf-8") as f:
         json.dump(schedule_data, f, ensure_ascii=False, indent=2)
     print(f"スケジュール取得完了: 全 {len(schedule_data)} 件 (うち本日発表 {len(todays_codes)} 件)")
 except Exception as e:
     print(f"スケジュール取得エラー: {e}")
-
 # ==========================================
 # 2. TDnetから対象銘柄のPDFURLを抽出
 # ==========================================
