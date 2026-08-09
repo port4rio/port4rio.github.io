@@ -746,8 +746,11 @@ function sortPortfolio() {
 
     if (portfolio.length === 0) {
       secretaryPages.push("Port4rioへようこそ！<br>まずは上の検索窓から<br>銘柄を登録してみてね🤖");
+      secretaryPages.push("銘柄を登録すると…<br>📅<b>決算発表</b>の予定を<br>自動でお知らせするよ！");
+      secretaryPages.push("さらに！<br>あなたのポートフォリオを<br>🍥<b>AIに分析</b>してもらう<br>こともできちゃうんだ🤖");
     } else if (!hasAnyCost) {
       secretaryPages.push("登録ありがとう！<br>株数と買値を入力すると<br>損益を自動計算するよ📊");
+      secretaryPages.push("さらに！<br>あなたのポートフォリオを<br>🍥<b>AIに分析</b>してもらう<br>こともできちゃうんだ🤖");
     } else {
       // ページ1: 決算接近中
       let earningsAlerts = [];
@@ -794,11 +797,8 @@ function sortPortfolio() {
       const geminiConsultBtn = document.getElementById('gemini-consult-btn');
       
       if (portfolio.length > 0) {
-        // ① 最優先の指示と分析依頼文
-        let prompt = `以下の指示を最優先で守り、回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を拝見しました！」から始めてください。\n\n`;
-        prompt += `【分析依頼】\n`;
-        prompt += `・私の以下の保有株ポートフォリオについて、サイト上にある情報も活かしてアドバイスしてほしい。\n`;
-        prompt += `・年間受取配当金概算も見たい。\n\n`;
+        let prompt = `私の保有株ポートフォリオを分析し、影響力の大きい銘柄の今知るべきニュースを教えてください。年間受取配当金の概算も。\n`;
+        prompt += `挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
         prompt += `【保有株ポートフォリオ】\n`;
         
         // ② ポートフォリオを最小限のテキストに圧縮して箇条書き
@@ -832,7 +832,7 @@ function sortPortfolio() {
     
     <!-- ▼ Gemini相談ボタン（初期は非表示） ▼ -->
     <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: right; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
-      <a id="gemini-consult-btn" href="#" target="_blank" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Geminiに相談</a>
+      <a id="gemini-consult-btn" href="#" target="_blank" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
     </div>
   </div>
 </div>
