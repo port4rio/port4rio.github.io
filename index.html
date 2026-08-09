@@ -811,7 +811,7 @@ function sortPortfolio() {
         });
         
         // ③ URLエンコードしてボタンのリンクにセット
-        geminiConsultBtn.href = "https://gemini.google.com/app?text=" + encodeURIComponent(prompt);
+        geminiConsultBtn.href = "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
         geminiBtnArea.style.display = 'block';
       } else {
         geminiBtnArea.style.display = 'none';
