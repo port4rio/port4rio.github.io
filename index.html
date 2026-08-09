@@ -788,6 +788,35 @@ function sortPortfolio() {
     if (secretaryPages.length > 0) {
       document.getElementById('ai-secretary').style.display = 'flex';
       document.getElementById('ai-bubble').style.display = 'block';
+      
+      // ▼ 追加：Gemini相談ボタンの制御とプロンプト生成 ▼
+      const geminiBtnArea = document.getElementById('gemini-btn-area');
+      const geminiConsultBtn = document.getElementById('gemini-consult-btn');
+      
+      if (portfolio.length > 0) {
+        // ① 最優先の指示と分析依頼文
+        let prompt = `以下の指示を最優先で守り、回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を拝見しました！」から始めてください。\n\n`;
+        prompt += `【分析依頼】\n`;
+        prompt += `・私の以下の保有株ポートフォリオについて、サイト上にある情報も活かしてアドバイスしてほしい。\n`;
+        prompt += `・年間受取配当金概算も見たい。\n\n`;
+        prompt += `【保有株ポートフォリオ】\n`;
+        
+        // ② ポートフォリオを最小限のテキストに圧縮して箇条書き
+        portfolio.forEach(s => {
+          prompt += `・${s.code} ${s.name}`;
+          if (s.shares > 0 && s.price > 0) {
+            prompt += `：${s.shares}株 (買値: ${s.price}円)`;
+          }
+          prompt += `\n`;
+        });
+        
+        // ③ URLエンコードしてボタンのリンクにセット
+        geminiConsultBtn.href = "https://gemini.google.com/app?text=" + encodeURIComponent(prompt);
+        geminiBtnArea.style.display = 'block';
+      } else {
+        geminiBtnArea.style.display = 'none';
+      }
+
       playSecretaryLoop(runId);
     }
   }
@@ -800,7 +829,13 @@ function sortPortfolio() {
     <!-- ✕をクリックで吹き出しだけ消去 -->
     <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
+    
+    <!-- ▼ Gemini相談ボタン（初期は非表示） ▼ -->
+    <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: right; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
+      <a id="gemini-consult-btn" href="#" target="_blank" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Geminiに相談</a>
+    </div>
   </div>
+</div>
 </div>
 </body>
 </html>
