@@ -142,8 +142,6 @@
 </head>
 <body>
 
-<button onclick="consultGemini()">Geminiにポートフォリオを相談する</button>
-
 <h1>📈 Port4rio</h1>
 <div id="toast"></div>
 
@@ -236,39 +234,6 @@
   
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
-  function consultGemini() {
-  // 1. localStorageからデータを取得
-  const storedData = localStorage.getItem('stocks'); // ご提示のJSONが入っているキー名
-  if (!storedData) {
-    alert('保有株リストが見つかりません。');
-    return;
-  }
-
-  try {
-    const portfolio = JSON.parse(storedData);
-    
-    // 2. Geminiが解釈しやすいようにシンプルなテキスト（箇条書き）に変換
-    let stockLines = "";
-    portfolio.forEach(item => {
-      stockLines += `- ${item.code} ${item.name}: ${item.shares}株 (株価: ${item.price}円)\n`;
-    });
-
-    // 3. AIへの質問プロンプトを組み立て
-    const prompt = `以下の私の保有株ポートフォリオについて、セクターの偏り、リスク分散の観点、および改善点のアドバイスを日本語で詳しく投資分析してください。\n\n${stockLines}`;
-
-    // 4. URLエンコードしてGeminiのURLと結合
-    const encodedPrompt = encodeURIComponent(prompt);
-    const geminiUrl = `https://google.com{encodedPrompt}`;
-
-    // 5. 新しいタブで開く
-    window.open(geminiUrl, '_blank');
-    
-  } catch (e) {
-    alert('データの解析に失敗しました。JSONの形式を確認してください。');
-    console.error(e);
-  }
-}
-  
   function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.innerText = msg; toast.style.display = 'block';
