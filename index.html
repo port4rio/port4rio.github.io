@@ -325,7 +325,7 @@
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
+        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed));
         lastNetworkRequestTime = Date.now();
         const res = await fetch(getProxyUrl(targetUrl));
         if (!res.ok) continue;
