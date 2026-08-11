@@ -19,18 +19,15 @@
   .ai-news-container h2 { margin-top: 0; font-size: 1.1em; color: #1976d2; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .ai-news-toggle { font-size: 0.8em; color: #666; cursor: pointer; font-weight: normal; padding: 4px; }
   
-  /* スマホ等で長くなりすぎないように高さを制限してスクロール可能に */
   #ai-news-list { overflow-y: auto; padding-right: 5px; transition: max-height 0.3s ease-in-out; }
   
   .ai-news-card { background: #fff; padding: 12px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   
-  /* アコーディオンのヘッダー部分 */
   .ai-news-header { cursor: pointer; display: flex; flex-direction: column; gap: 4px; user-select: none; }
   .ai-news-meta { font-size: 0.85em; color: #7f8c8d; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
   .badge-owned { background: #ff9800; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
   .ai-news-title { font-weight: bold; font-size: 1em; color: #2c3e50; line-height: 1.3; }
   
-  /* アコーディオンの中身（初期は非表示） */
   .ai-news-body { display: none; padding-top: 10px; margin-top: 8px; border-top: 1px dashed #eee; }
   .ai-news-summary { font-size: 0.9em; color: #444; line-height: 1.6; white-space: pre-wrap; }
   .ai-news-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none; }
@@ -53,7 +50,6 @@
   .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
   .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; }
   
-  /* タイルのヘッダーと右上の絶対配置✕ボタン */
   .tile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; padding-right: 24px; }
   .title-group { display: flex; align-items: baseline; gap: 6px; overflow: hidden; flex: 1; padding-right: 5px; }
   .tile-code { font-size: 0.85em; color: #7f8c8d; flex-shrink: 0; }
@@ -78,7 +74,6 @@
   .stat-label { font-size: 11px; color: #7f8c8d; }
   .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; }
   
-  /* 計算欄（コンパクト版） */
   .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
   .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; }
   .calc-input::-webkit-outer-spin-button, .calc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -94,18 +89,17 @@
   .disclaimer { font-size: 10px; color: #999; text-align: center; margin-top: 40px; margin-bottom: 20px; line-height: 1.5; }
   
   #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; }
-  /* ▼ トップへ戻るフッターロゴ ▼ */
   .footer-logo { text-align: center; margin-top: 40px; margin-bottom: -20px; }
   .footer-logo span { cursor: pointer; font-size: 1.2em; font-weight: bold; color: #1976d2; display: inline-block; padding: 10px; user-select: none; }
   
-  /* ▼ ダークモード (端末の設定に自動連動) ▼ */
-  /* ▼ AI秘書 ▼ */
+  /* ▼ ダークモード対応とAI秘書のデザイン ▼ */
   .ai-secretary-container { position: fixed; bottom: 15px; left: 15px; z-index: 1000; display: flex; align-items: flex-end; gap: 10px; max-width: calc(100vw - 30px); pointer-events: none; }
-  .ai-mascot { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 35px; pointer-events: auto; cursor: pointer; transition: transform 0.2s; }
-  .ai-mascot:active { transform: scale(0.9); } /* 押したときに少し凹むアニメーション */
+  .ai-mascot { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 35px; pointer-events: auto; cursor: pointer; transition: transform 0.2s; background: transparent; border: none;}
+  .ai-mascot:active { transform: scale(0.9); }
   .ai-bubble { background: #fff; padding: 12px 25px 12px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-size: 13px; position: relative; border: 1px solid #eee; pointer-events: auto; line-height: 1.5; }
   .ai-bubble::before { content: ""; position: absolute; bottom: 15px; left: -7px; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 7px solid #fff; }
   .ai-bubble-close { position: absolute; top: 4px; right: 6px; font-size: 12px; color: #999; cursor: pointer; background: none; border: none; }
+  
   @media (prefers-color-scheme: dark) {
     body { background-color: #121212; color: #e0e0e0; color-scheme: dark; }
     h1, .tile-name, .ai-news-title, .footer-logo span { color: #ffffff !important; }
@@ -128,9 +122,13 @@
     .ai-news-link { color: #64b5f6; }
     .plus { color: #66bb6a !important; }
     .minus { color: #ef5350 !important; }
-    .ai-mascot { background: transparent; border: none; color: #ffcce0; text-shadow: 0 0 5px rgba(255, 204, 224, 0.7), 0 0 10px rgba(255, 204, 224, 0.3); }
+    
+    /* ▼ ロボットの顔ネオン発光 ＆ セリフの通常表示 ▼ */
+    .ai-mascot { color: #ffcce0; text-shadow: 0 0 5px rgba(255, 204, 224, 0.7), 0 0 10px rgba(255, 204, 224, 0.3); }
     .ai-bubble { background: #1e1e1e; border-color: #444; color: #e0e0e0; text-shadow: none; }
     .ai-bubble::before { border-right-color: #1e1e1e; }
+    
+    /* ▼ AIサマリー専用ダークスクロールバー ▼ */
     #ai-news-list { scrollbar-color: #555 transparent; scrollbar-width: thin; }
     #ai-news-list::-webkit-scrollbar { width: 6px; }
     #ai-news-list::-webkit-scrollbar-track { background: transparent; }
@@ -144,16 +142,19 @@
 <h1>📈 Port4rio</h1>
 <div id="toast"></div>
 
-<!-- AIニュースコンテナ -->
+<!-- ▼ AIニュースコンテナ ▼ -->
 <div id="ai-news-container" class="ai-news-container">
   <h2>
-    <span style="display:flex; align-items:center; gap:6px;">✨ AI決算サマリー</span>
-    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▲ 閉じる</span>
+    <span style="display:flex; align-items:center; gap:6px;">
+      ✨ AI決算サマリー
+      <span id="ai-news-sort-btn" onclick="toggleNewsSort()" style="font-size: 0.75em; cursor: pointer; text-decoration: underline; color: #888; margin-left: 8px;">[⇅新着順]</span>
+    </span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼ 広げる</span>
   </h2>
   <div id="ai-news-list"></div>
 </div>
 
-<!-- 銘柄登録フォーム -->
+<!-- ▼ 銘柄登録フォーム ▼ -->
 <div class="input-card">
   <div class="form-group">
     <div class="search-container">
@@ -166,10 +167,10 @@
   </div>
 </div>
 
-<!-- ポートフォリオ一覧 -->
+<!-- ▼ ポートフォリオ一覧 ▼ -->
 <div id="portfolio-grid" class="portfolio-grid"></div>
 
-<!-- 全体サマリー -->
+<!-- ▼ 全体サマリー ▼ -->
 <div class="summary-card">
   <div class="summary-content">
     <div id="pie-chart" class="pie-chart" title="評価額の内訳"></div>
@@ -180,6 +181,7 @@
     </div>
   </div>
 </div>
+
 <!-- ▼ ツールエリア（並べ替え・バックアップ） ▼ -->
 <div class="summary-card" style="margin-bottom: 20px;">
   <div style="text-align: center; margin-bottom: 12px;">
@@ -192,45 +194,59 @@
       <option value="dod_change">前日比(%)が高い順</option>
     </select>
   </div>
-  <!-- ボタンサイズを「株価を最新に更新」と同じ(padding: 6px 14px; font-size: 12px;)に統一 -->
   <div class="tool-area-divider" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; border-top: 1px dashed #eee; padding-top: 12px;">
-    <button onclick="backupPortfolio()" style="padding: 6px 14px; background-color: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">バックアップ</button>
-    <button onclick="document.getElementById('restore-file').click()" style="padding: 6px 14px; background-color: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">読込</button>
+    <button onclick="backupPortfolio()" style="padding: 6px 14px; background-color: #ff9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">💾 バックアップ</button>
+    <button onclick="document.getElementById('restore-file').click()" style="padding: 6px 14px; background-color: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">📂 読込</button>
     <input type="file" id="restore-file" accept=".json" style="display: none;" onchange="restorePortfolio(event)">
   </div>
 </div>
 
-<!-- ▼ フッター（トップへ戻る） ▼ -->
 <div class="footer-logo">
   <span onclick="window.scrollTo({top: 0, behavior: 'smooth'})">📈 Port4rio</span>
 </div>
 
-<!-- ▼ 免責事項 ▼ -->
 <div class="disclaimer">
   当サイトの情報は参考であり投資の最終判断は自己責任でお願いします。<br>
   取得している株価・決算予定・AI要約等の正確性は保証されません。
 </div>
 
+<!-- ▼ AI秘書（フローティング） ▼ -->
+<div id="ai-secretary" class="ai-secretary-container">
+  <div class="ai-mascot" id="ai-mascot-img" onclick="openSecretary()">🤖</div>
+  <div class="ai-bubble" id="ai-bubble">
+    <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
+    <span id="ai-secretary-text">読み込み中...</span>
+    
+    <!-- ▼ Gemini相談ボタン ▼ -->
+    <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
+      <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
+    </div>
+  </div>
+</div>
+
 <script>
+  // ==========================================
+  // ▼ 共通変数と基本設定 ▼
+  // ==========================================
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
   let upcomingSchedule = {};
+  
+  // AI秘書・AIニュース制御用
   let secretaryPages = [];
   let secretaryPageIdx = 0;
   let secretaryTimeout = null;
   let currentTypewriterId = 0;
   let secLastVal = 0;
   let secLastProf = 0;
-  
-  // ▼ 追加：制御用変数 ▼
-  let aiNewsState = 1; // 0:閉じる, 1:中間, 2:広げる
-  let isFetchingPrices = false; // 株価取得中フラグ
-  let isSecretaryClosed = false; // 秘書を閉じたかフラグ
+  let isNewsSortOwned = false; 
+  let aiNewsState = 1; 
+  let isFetchingPrices = false; 
+  let isSecretaryClosed = false; 
   
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
-  
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
   function showToast(msg) {
@@ -244,6 +260,9 @@
     return str.replace(/[\s ]+/g, '').toUpperCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x0060));
   }
 
+  // ==========================================
+  // ▼ 銘柄検索と辞書読み込み ▼
+  // ==========================================
   const searchInput = document.getElementById('search-input');
   const suggestBox = document.getElementById('suggest-box');
 
@@ -291,6 +310,9 @@
     } catch (e) { searchInput.placeholder = "辞書読込エラー"; }
   }
 
+  // ==========================================
+  // ▼ 株価取得とポートフォリオ管理 ▼
+  // ==========================================
   async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
@@ -323,147 +345,24 @@
     if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
     return null;
   }
-// ▼ ドラクエ風タイピング機能（HTMLタグを壊さずに0.03秒で表示） ▼
-  async function typeWriter(html, id) {
-    const el = document.getElementById('ai-secretary-text');
-    if (!el) return;
-    el.innerHTML = '';
-    let i = 0, isTag = false, text = '';
-    
-    while (i < html.length) {
-      if (currentTypewriterId !== id || isSecretaryClosed) return; // 中断処理
-      let char = html.charAt(i);
-      text += char;
-      if (char === '<') isTag = true;
-      if (char === '>') isTag = false;
-      
-      el.innerHTML = text;
-      i++;
-      // タグの中身以外の文字のときだけ 0.03秒 (30ms) 待つ
-      if (!isTag && char !== '>') {
-        await new Promise(r => setTimeout(r, 30));
-      }
-    }
-  }
 
-  // ▼ ページ送り＆ループ機能（3秒待機） ▼
-  async function playSecretaryLoop(id) {
-    if (currentTypewriterId !== id || isSecretaryClosed || secretaryPages.length === 0) return;
-    
-    const html = secretaryPages[secretaryPageIdx];
-    await typeWriter(html, id); // タイピング実行
-    
-    // 打ち終わった後、まだ自分が最新の処理なら3秒待って次へ
-    if (currentTypewriterId === id && !isSecretaryClosed) {
-      secretaryTimeout = setTimeout(() => {
-        secretaryPageIdx = (secretaryPageIdx + 1) % secretaryPages.length; // 最後の次は0に戻る
-        playSecretaryLoop(id);
-      }, 3000);
-    }
-  }
-  
-// ▼ 株価の一括更新（更新中の秘書ポップアップを防止） ▼
   async function refreshAllPrices(forceRefresh = false) {
     if (portfolio.length === 0) return;
     if (forceRefresh) showToast("株価を更新中...");
     
-    isFetchingPrices = true; // 更新中フラグON（秘書を黙らせる）
+    isFetchingPrices = true; 
     
     for (let i = 0; i < portfolio.length; i++) {
       const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
       if (data) { currentPrices[portfolio[i].code] = data; renderTiles(); }
     }
     
-    isFetchingPrices = false; // 更新完了
+    isFetchingPrices = false; 
     if (forceRefresh) showToast("完了しました");
     
-    // 最後に1回だけ秘書を呼ぶ
     renderTiles();
   }
 
-// ▼ AIサマリーの3段階トグル（中間 -> 広げる -> 閉じる） ▼
-  function toggleAINews() {
-    const list = document.getElementById('ai-news-list');
-    const toggle = document.getElementById('ai-news-toggle');
-    aiNewsState = (aiNewsState + 1) % 3;
-    
-    if (aiNewsState === 0) {
-      list.style.display = 'none';
-      toggle.innerText = '▼ 開く';
-    } else if (aiNewsState === 1) {
-      list.style.display = 'block';
-      list.style.maxHeight = '35vh';
-      toggle.innerText = '▼ 広げる';
-    } else {
-      list.style.display = 'block';
-      list.style.maxHeight = '65vh'; // 中間の約180%の高さ
-      toggle.innerText = '▲ 閉じる';
-    }
-  }
-
-// アコーディオン形式＆1行コンパクト・矢印カラー（完全版）
-  async function loadAINews() {
-    try {
-      const response = await fetch('ai_news.json?t=' + new Date().getTime());
-      if (response.ok) {
-        const newsData = await response.json();
-        if (newsData && newsData.length > 0) {
-          const list = document.getElementById('ai-news-list'); list.innerHTML = '';
-          newsData.forEach(item => {
-            const isOwned = portfolio.some(s => s.code === item.code);
-            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
-            const stockName = meigaraDict[item.code]?.shortName || '---';
-            
-            // 日付を 08/04 形式に
-            const shortDate = item.date.substring(5).replace('-', '/');
-            
-            // 矢印の抽出とクラス判定
-            let arrowHtml = '';
-            let displayTitle = item.title;
-            const arrowMatch = item.title.match(/[⤴⤵→]/);
-            
-            if (arrowMatch) {
-              const arrow = arrowMatch[0];
-              displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
-              
-              // 前日比と同じ .plus .minus クラスを割り当てることで色を完全一致させる
-              if (arrow === '⤴') {
-                arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '⤵') {
-                arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '→') {
-                arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              }
-            }
-            
-            const card = document.createElement('div'); card.className = 'ai-news-card';
-            card.innerHTML = `
-              <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <div class="ai-news-title" style="line-height: 1.4;">
-                  <!-- 余計なクラスを外して自然なインライン表示に修正 -->
-                  <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
-                  ${badgeHtml}
-                  <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
-                  ${arrowHtml}
-                  <span style="font-weight: bold;">${displayTitle}</span>
-                </div>
-              </div>
-              <div class="ai-news-body">
-                <div class="ai-news-summary">${item.summary}</div>
-                <a href="${item.url}" target="_blank" class="ai-news-link">📄 元のPDFを開く</a>
-              </div>
-            `;
-            list.appendChild(card);
-          });
-          document.getElementById('ai-news-container').style.display = 'block';
-          
-          // ▼ 追加：初期状態を強制的に「中間サイズ」にセットする ▼
-          document.getElementById('ai-news-list').style.maxHeight = '35vh';
-          document.getElementById('ai-news-toggle').innerText = '▼ 広げる';
-        }
-      }
-    } catch (e) {}
-  }
   async function addStock() {
     const searchVal = searchInput.value.trim();
     const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
@@ -488,45 +387,79 @@
   function calcTarget(index, buyPrice, shares) {
     const targetPrice = document.getElementById(`target-${index}`).value;
     const resultEl = document.getElementById(`target-result-${index}`);
-    
-    if (!shares || !buyPrice) {
-        resultEl.innerText = '株数・買値が未設定';
-        resultEl.className = '';
-        return;
-    }
+    if (!shares || !buyPrice) { resultEl.innerText = '株数・買値が未設定'; resultEl.className = ''; return; }
     if (targetPrice) {
       const profit = (targetPrice - buyPrice) * shares;
       resultEl.innerText = `${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
       resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
-    } else {
-      resultEl.innerText = '- 円';
-      resultEl.className = '';
-    }
+    } else { resultEl.innerText = '- 円'; resultEl.className = ''; }
   }
 
   function calcAverage(index, currentBuyPrice, currentShares) {
       const addShares = parseFloat(document.getElementById(`add-shares-${index}`).value);
       const addPrice = parseFloat(document.getElementById(`add-price-${index}`).value);
       const resultEl = document.getElementById(`add-result-${index}`);
-
-      if (!currentShares || !currentBuyPrice) {
-          resultEl.innerText = '元データが未設定';
-          return;
-      }
+      if (!currentShares || !currentBuyPrice) { resultEl.innerText = '元データが未設定'; return; }
       if (addShares && addPrice) {
           const totalCost = (currentBuyPrice * currentShares) + (addPrice * addShares);
           const totalShares = currentShares + addShares;
           const avgPrice = totalCost / totalShares;
           resultEl.innerText = `${avgPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 円`;
-      } else {
-          resultEl.innerText = '- 円';
+      } else { resultEl.innerText = '- 円'; }
+  }
+
+  function sortPortfolio() {
+    const type = document.getElementById('sort-select').value;
+    if (type === 'default') return;
+    
+    portfolio.sort((a, b) => {
+      const dataA = currentPrices[a.code] || {}; const dataB = currentPrices[b.code] || {};
+      const priceA = dataA.price || 0; const priceB = dataB.price || 0;
+      if (type === 'code') return a.code.localeCompare(b.code); 
+      else if (type === 'value') return (priceB * (b.shares || 0)) - (priceA * (a.shares || 0)); 
+      else if (type === 'profit_rate') {
+        const profA = a.price > 0 && priceA > 0 ? ((priceA - a.price) / a.price) : -9999;
+        const profB = b.price > 0 && priceB > 0 ? ((priceB - b.price) / b.price) : -9999;
+        return profB - profA;
+      } else if (type === 'dod_change') {
+        const dodA = dataA.change_percent || -9999; const dodB = dataB.change_percent || -9999;
+        return dodB - dodA; 
       }
+      return 0;
+    });
+    localStorage.setItem('portfolio', JSON.stringify(portfolio)); renderTiles();
+    document.getElementById('sort-select').value = 'default'; showToast("並べ替えを適用しました");
+  }
+
+  function backupPortfolio() {
+    if (portfolio.length === 0) { showToast("バックアップするデータがありません"); return; }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(portfolio));
+    const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "port4rio_backup.json"); document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click(); downloadAnchorNode.remove(); showToast("バックアップを保存しました");
+  }
+
+  function restorePortfolio(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          if (confirm("現在のポートフォリオを上書きして復元しますか？")) {
+            portfolio = imported; localStorage.setItem('portfolio', JSON.stringify(portfolio));
+            document.getElementById('restore-file').value = ''; showToast("復元しました。株価を更新中...");
+            await refreshAllPrices(true); renderTiles(); loadAINews();
+          }
+        } else { showToast("無効なファイル形式です"); }
+      } catch (err) { showToast("ファイルの読み込みに失敗しました"); }
+    };
+    reader.readAsText(file);
   }
 
   function renderTiles() {
     const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
-    let totalValue = 0, totalProfit = 0;
-    let pieData = [];
+    let totalValue = 0, totalProfit = 0; let pieData = [];
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
@@ -576,7 +509,6 @@
             <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${vStr}</span></div>
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
-          
           <div class="calc-area">
             目標: <input type="number" class="calc-input" style="width: 70px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
             <span style="font-weight: bold; margin-left: 5px;">利益: <span id="target-result-${index}">-</span></span>
@@ -596,10 +528,7 @@
     
     const pieChart = document.getElementById('pie-chart');
     if (totalValue > 0 && pieData.length > 0) {
-      pieData.sort((a, b) => b.val - a.val);
-      let gradientStr = [];
-      let cumulativePercent = 0;
-      let tooltipLines = [];
+      pieData.sort((a, b) => b.val - a.val); let gradientStr = []; let cumulativePercent = 0; let tooltipLines = [];
       pieData.forEach(item => {
         let percent = (item.val / totalValue) * 100;
         gradientStr.push(`${item.color} ${cumulativePercent}% ${cumulativePercent + percent}%`);
@@ -612,122 +541,142 @@
       pieChart.style.background = `conic-gradient(#eee 0 100%)`;
       pieChart.title = "銘柄を登録すると内訳グラフが表示されます";
     }
+    
+    // ▼ ここで最新情報を秘書に渡す ▼
     updateAISecretary(totalValue, totalProfit);
   }
 
-  async function init() {
-    await loadDictionary();
-    try {
-      const res = await fetch('schedule.json?t=' + new Date().getTime());
-      if (res.ok) upcomingSchedule = await res.json();
-    } catch(e) {}
-    renderTiles();
-    refreshAllPrices(false);
-    loadAINews();
-  }
-function sortPortfolio() {
-    const type = document.getElementById('sort-select').value;
-    if (type === 'default') return;
-    
-    portfolio.sort((a, b) => {
-      const dataA = currentPrices[a.code] || {};
-      const dataB = currentPrices[b.code] || {};
-      const priceA = dataA.price || 0;
-      const priceB = dataB.price || 0;
-
-      if (type === 'code') {
-        return a.code.localeCompare(b.code); // 文字列順（A-Z, 0-9）
-      } else if (type === 'value') {
-        const valA = priceA * (a.shares || 0);
-        const valB = priceB * (b.shares || 0);
-        return valB - valA; // 降順
-      } else if (type === 'profit_rate') {
-        const profA = a.price > 0 && priceA > 0 ? ((priceA - a.price) / a.price) : -9999;
-        const profB = b.price > 0 && priceB > 0 ? ((priceB - b.price) / b.price) : -9999;
-        return profB - profA; // 降順
-      } else if (type === 'dod_change') {
-        const dodA = dataA.change_percent || -9999;
-        const dodB = dataB.change_percent || -9999;
-        return dodB - dodA; // 降順
-      }
-      return 0;
-    });
-    
-    localStorage.setItem('portfolio', JSON.stringify(portfolio));
-    renderTiles();
-    
-    // 選択状態をリセット
-    document.getElementById('sort-select').value = 'default';
-    showToast("並べ替えを適用しました");
+  // ==========================================
+  // ▼ AI決算サマリー機能 ▼
+  // ==========================================
+  function toggleNewsSort() {
+    isNewsSortOwned = !isNewsSortOwned;
+    const btn = document.getElementById('ai-news-sort-btn');
+    btn.innerText = isNewsSortOwned ? '[★保有優先]' : '[⇅新着順]';
+    loadAINews(); 
   }
 
-  function backupPortfolio() {
-    if (portfolio.length === 0) {
-      showToast("バックアップするデータがありません");
-      return;
+  function toggleAINews() {
+    const list = document.getElementById('ai-news-list');
+    const toggle = document.getElementById('ai-news-toggle');
+    aiNewsState = (aiNewsState + 1) % 3;
+    
+    if (aiNewsState === 0) {
+      list.style.display = 'none'; toggle.innerText = '▼ 開く';
+    } else if (aiNewsState === 1) {
+      list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼ 広げる';
+    } else {
+      list.style.display = 'block'; list.style.maxHeight = '65vh'; toggle.innerText = '▲ 閉じる';
     }
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(portfolio));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "port4rio_backup.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    showToast("バックアップを保存しました");
   }
 
-  function restorePortfolio(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const imported = JSON.parse(e.target.result);
-        if (Array.isArray(imported)) {
-          if (confirm("現在のポートフォリオを上書きして復元しますか？")) {
-            portfolio = imported;
-            localStorage.setItem('portfolio', JSON.stringify(portfolio));
-            document.getElementById('restore-file').value = ''; // inputのリセット
-            showToast("復元しました。株価を更新中...");
-            await refreshAllPrices(true);
-            renderTiles();
-            loadAINews();
+  async function loadAINews() {
+    try {
+      const response = await fetch('ai_news.json?t=' + new Date().getTime());
+      if (response.ok) {
+        const newsData = await response.json();
+        if (newsData && newsData.length > 0) {
+          
+          if (isNewsSortOwned) {
+            newsData.sort((a, b) => {
+              const aOwned = portfolio.some(s => s.code === a.code);
+              const bOwned = portfolio.some(s => s.code === b.code);
+              if (aOwned && !bOwned) return -1;
+              if (!aOwned && bOwned) return 1;
+              return 0; 
+            });
           }
-        } else {
-          showToast("無効なファイル形式です");
+
+          const list = document.getElementById('ai-news-list'); list.innerHTML = '';
+          newsData.forEach(item => {
+            const isOwned = portfolio.some(s => s.code === item.code);
+            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
+            const stockName = meigaraDict[item.code]?.shortName || '---';
+            const shortDate = item.date.substring(5).replace('-', '/');
+            
+            let arrowHtml = '';
+            let displayTitle = item.title;
+            const arrowMatch = item.title.match(/[⤴⤵→]/);
+            
+            if (arrowMatch) {
+              const arrow = arrowMatch[0]; displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
+              if (arrow === '⤴') arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              else if (arrow === '⤵') arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              else if (arrow === '→') arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+            }
+            
+            const card = document.createElement('div'); card.className = 'ai-news-card';
+            card.innerHTML = `
+              <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
+                <div class="ai-news-title" style="line-height: 1.4;">
+                  <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
+                  ${badgeHtml}
+                  <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
+                  ${arrowHtml}
+                  <span style="font-weight: bold;">${displayTitle}</span>
+                </div>
+              </div>
+              <div class="ai-news-body">
+                <div class="ai-news-summary">${item.summary}</div>
+                <a href="${item.url}" target="_blank" class="ai-news-link">📄 元のPDFを開く</a>
+              </div>
+            `;
+            list.appendChild(card);
+          });
+          document.getElementById('ai-news-container').style.display = 'block';
+          document.getElementById('ai-news-list').style.display = 'block';
+          document.getElementById('ai-news-list').style.maxHeight = '35vh';
+          document.getElementById('ai-news-toggle').innerText = '▼ 広げる';
+          aiNewsState = 1; 
         }
-      } catch (err) {
-        showToast("ファイルの読み込みに失敗しました");
       }
-    };
-    reader.readAsText(file);
+    } catch (e) {}
   }
-  init();
-// ▼ 吹き出しを閉じる（顔は残す） ▼
+
+  // ==========================================
+  // ▼ AI秘書（アニメーション・判定・表示） ▼
+  // ==========================================
+  async function typeWriter(html, id) {
+    const el = document.getElementById('ai-secretary-text'); if (!el) return;
+    el.innerHTML = ''; let i = 0, isTag = false, text = '';
+    
+    while (i < html.length) {
+      if (currentTypewriterId !== id || isSecretaryClosed) return; 
+      let char = html.charAt(i); text += char;
+      if (char === '<') isTag = true; if (char === '>') isTag = false;
+      el.innerHTML = text; i++;
+      if (!isTag && char !== '>') await new Promise(r => setTimeout(r, 30));
+    }
+  }
+
+  async function playSecretaryLoop(id) {
+    if (currentTypewriterId !== id || isSecretaryClosed || secretaryPages.length === 0) return;
+    const html = secretaryPages[secretaryPageIdx];
+    await typeWriter(html, id); 
+    if (currentTypewriterId === id && !isSecretaryClosed) {
+      secretaryTimeout = setTimeout(() => {
+        secretaryPageIdx = (secretaryPageIdx + 1) % secretaryPages.length; 
+        playSecretaryLoop(id);
+      }, 3000);
+    }
+  }
+
   function closeSecretary() {
     isSecretaryClosed = true;
     document.getElementById('ai-bubble').style.display = 'none';
-    clearTimeout(secretaryTimeout);
-    currentTypewriterId++; // 現在のタイピングとループを強制終了
+    clearTimeout(secretaryTimeout); currentTypewriterId++; 
   }
 
-  // ▼ 顔をタップして吹き出しを復活させる ▼
   function openSecretary() {
     isSecretaryClosed = false;
     document.getElementById('ai-bubble').style.display = 'block';
-    updateAISecretary(secLastVal, secLastProf); // 保存しておいた最新の金額で再計算
+    updateAISecretary(secLastVal, secLastProf); 
   }
 
-// ▼ AI秘書の頭脳（ページ切り替え対応 ＆ 吹き出し個別非表示対応） ▼
   function updateAISecretary(totalVal, totalProf) {
-    // 次に顔をタップされた時のために金額を記憶しておく
-    secLastVal = totalVal;
-    secLastProf = totalProf;
-
+    secLastVal = totalVal; secLastProf = totalProf;
     if (isFetchingPrices) return;
     
-    // 閉じている場合は、コンテナ（顔）は表示しつつ、吹き出しだけ隠して終了
     if (isSecretaryClosed) {
       document.getElementById('ai-secretary').style.display = 'flex';
       document.getElementById('ai-bubble').style.display = 'none';
@@ -737,38 +686,28 @@ function sortPortfolio() {
     clearTimeout(secretaryTimeout);
     currentTypewriterId++;
     const runId = currentTypewriterId;
-    secretaryPages = [];
-    secretaryPageIdx = 0;
+    secretaryPages = []; secretaryPageIdx = 0;
 
-    // ▼ 変更：現在値の合計(totalVal)ではなく、株数と買値が登録されているかで判定 ▼
     const hasAnyCost = portfolio.some(s => s.shares > 0 && s.price > 0);
 
     if (portfolio.length === 0) {
-      secretaryPages.push("<b>Port4rio</b>へようこそ！<br>まずは上の検索窓から<br>銘柄を登録してみてね 🤖");
-      secretaryPages.push("銘柄を登録すると…<br>📅 <b>決算発表</b>の予定を<br>画面上でお知らせするよ！");
-      secretaryPages.push("さらに！<br>あなたのポートフォリオを<br>🍥 <b>AIに分析</b>してもらう<br>こともできちゃうんだ 🤖");
+      secretaryPages.push("<b>Port4rio</b>へようこそ！<br>まずは上の検索窓から<br>銘柄を登録してみてね🤖");
+      secretaryPages.push("銘柄を登録すると…<br>📅<b>決算発表</b>の予定を<br>自動でお知らせするよ！");
+      secretaryPages.push("さらに！<br>あなたのポートフォリオを<br>🍥<b>AIに分析</b>してもらう<br>こともできちゃうんだ🤖");
     } else if (!hasAnyCost) {
-      secretaryPages.push("登録ありがとう！<br>株数と買値を入力すると<br>損益を自動計算するよ 📊");
-      secretaryPages.push("ブラウザで記憶してるから<br>いつでも資産チェックできるよ。<br>🔖 ブックマークはお忘れなく！");
+      secretaryPages.push("登録ありがとう！<br>株数と買値を入力すると<br>損益を自動計算するよ📊");
+      secretaryPages.push("ブラウザで記憶してるから<br>いつでもチェックできるよ。<br>🔖 ブックマークはお忘れなく！");
     } else {
-      // ページ1: 決算接近中
       let earningsAlerts = [];
       portfolio.forEach(stock => {
-        if (upcomingSchedule[stock.code]) {
-          earningsAlerts.push(`<b>${stock.name}</b> (${upcomingSchedule[stock.code].date})`);
-        }
+        if (upcomingSchedule[stock.code]) earningsAlerts.push(`<b>${stock.name}</b> (${upcomingSchedule[stock.code].date})`);
       });
-      if (earningsAlerts.length > 0) {
-        secretaryPages.push(`📅 <b>決算接近中！</b><br>${earningsAlerts.join('<br>')}<br>発表が控えてるよ！🤖`);
-      }
+      if (earningsAlerts.length > 0) secretaryPages.push(`📅 <b>決算接近中！</b><br>${earningsAlerts.join('<br>')}<br>発表が控えてるよ！🤖`);
 
-      // ページ2: 評価額ランキング (最大5件)
       let displayTotalVal = 0;
       let validStocks = portfolio.map((s, idx) => {
-        // ▼ 変更：株価取得前なら「買値」を仮の現在値として計算して待たせない ▼
         let price = (currentPrices[s.code] && currentPrices[s.code].price) ? currentPrices[s.code].price : s.price;
-        let val = price * s.shares;
-        displayTotalVal += val;
+        let val = price * s.shares; displayTotalVal += val;
         return { ...s, originalIndex: idx, val: val };
       }).filter(s => s.val > 0);
       
@@ -777,7 +716,6 @@ function sortPortfolio() {
       if (validStocks.length > 0) {
         let rankHtml = `👑 <b>評価額ランキング</b><br>`;
         const top5 = validStocks.slice(0, 5);
-        
         top5.forEach(s => {
           const color = pColors[s.originalIndex % pColors.length];
           const percent = ((s.val / displayTotalVal) * 100).toFixed(1);
@@ -791,50 +729,42 @@ function sortPortfolio() {
       document.getElementById('ai-secretary').style.display = 'flex';
       document.getElementById('ai-bubble').style.display = 'block';
       
-      // ▼ 追加：Gemini相談ボタンの制御とプロンプト生成 ▼
       const geminiBtnArea = document.getElementById('gemini-btn-area');
       const geminiConsultBtn = document.getElementById('gemini-consult-btn');
       
       if (portfolio.length > 0) {
-        let prompt = `私の保有株ポートフォリオを分析し、影響力の大きい銘柄の今日知るべきニュース、資産を増やす戦略を教えてください。月別配当金カレンダーも見たい。\n`;
-        prompt += `挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
-        prompt += `【保有株ポートフォリオ】\n`;
-        
-        // ② ポートフォリオを最小限のテキストに圧縮して箇条書き
-        portfolio.forEach(s => {
+        let prompt = `私の保有株ポートフォリオを分析し、影響力の大きい銘柄の今日知るべきニュース、資産を増やす戦略を教えてください。月別配当金カレンダーと年計も見たい。\n`;
+        prompt += `挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n【保有株ポートフォリオ】\n`;
           prompt += `・${s.code} ${s.name}`;
-          if (s.shares > 0 && s.price > 0) {
-            prompt += `：${s.shares}株 (買値: ${s.price}円)`;
-          }
+          if (s.shares > 0 && s.price > 0) prompt += `：${s.shares}株 (買値: ${s.price}円)`;
           prompt += `\n`;
         });
         
-        // ③ URLエンコードしてボタンのリンクにセット
+        // URLエンコードしてボタンのリンクにセット
         geminiConsultBtn.href = "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
         geminiBtnArea.style.display = 'block';
       } else {
         geminiBtnArea.style.display = 'none';
       }
-
       playSecretaryLoop(runId);
     }
   }
+
+  // ==========================================
+  // ▼ 初期化処理 ▼
+  // ==========================================
+  async function init() {
+    await loadDictionary();
+    try {
+      const res = await fetch('schedule.json?t=' + new Date().getTime());
+      if (res.ok) upcomingSchedule = await res.json();
+    } catch(e) {}
+    renderTiles();
+    refreshAllPrices(false);
+    loadAINews();
+  }
+
+  init();
 </script>
-<!-- ▼ AI秘書（フローティング） ▼ -->
-<div id="ai-secretary" class="ai-secretary-container">
-  <!-- 顔をクリックでセリフ復活 -->
-  <div class="ai-mascot" id="ai-mascot-img" onclick="openSecretary()">🤖</div>
-  <div class="ai-bubble" id="ai-bubble">
-    <!-- ✕をクリックで吹き出しだけ消去 -->
-    <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
-    <span id="ai-secretary-text">読み込み中...</span>
-    
-    <!-- ▼ Gemini(ChatGPT)相談ボタン ▼ -->
-    <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
-      <a id="gemini-consult-btn" href="#" target="_blank" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
-    </div>
-  </div>
-</div>
-</div>
 </body>
 </html>
