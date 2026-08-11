@@ -177,6 +177,7 @@
     <div class="summary-stats">
       <div>合計評価額: <span id="total-value">0円</span></div>
       <div>合計損益: <span id="total-profit">0円</span></div>
+      <div>前日比: <span id="total-dod">0円 (+0.0%)</span></div>
       <button class="reload-btn" onclick="refreshAllPrices(true)">🔄 株価を最新に更新</button>
     </div>
   </div>
@@ -217,7 +218,7 @@
     <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
     
-    <!-- ▼ Gemini相談ボタン ▼ -->
+    <!-- ▼ AI相談ボタン ▼ -->
     <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
       <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
     </div>
@@ -460,6 +461,7 @@
   function renderTiles() {
     const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
     let totalValue = 0, totalProfit = 0; let pieData = [];
+    let totalDodAmount = 0, totalPrevValue = 0;
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
@@ -477,6 +479,11 @@
         if (hasCost) {
             const val = stockData.price * stock.shares; const prof = (stockData.price - stock.price) * stock.shares;
             totalValue += val; totalProfit += prof;
+            if (stockData.change_amount !== null) {
+                totalDodAmount += stockData.change_amount * stock.shares;
+                totalPrevValue += (stockData.price - stockData.change_amount) * stock.shares;
+            }
+
             vStr = val.toLocaleString() + '円'; pStr = (prof > 0 ? '+' : '') + prof.toLocaleString() + '円';
             pClass = prof > 0 ? 'plus' : (prof < 0 ? 'minus' : '');
             if (val > 0) pieData.push({ name: stock.name, val: val, color: color });
@@ -525,6 +532,14 @@
     document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
     document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
     document.getElementById('total-profit').className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
+    const totalDodEl = document.getElementById('total-dod');
+    if (totalDodEl) {
+      let dodPercent = 0;
+      if (totalPrevValue > 0) dodPercent = (totalDodAmount / totalPrevValue) * 100;
+      const dodSign = totalDodAmount > 0 ? '+' : '';
+      totalDodEl.innerText = `${dodSign}${Math.round(totalDodAmount).toLocaleString()}円 (${dodSign}${dodPercent.toFixed(1)}%)`;
+      totalDodEl.className = totalDodAmount > 0 ? 'plus' : (totalDodAmount < 0 ? 'minus' : '');
+    }
     
     const pieChart = document.getElementById('pie-chart');
     if (totalValue > 0 && pieData.length > 0) {
