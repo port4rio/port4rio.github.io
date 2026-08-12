@@ -336,8 +336,9 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
-        const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
-        let prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose);
+        //const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
+        //let prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose);
+        let prevClose = meta.previousClose || meta.chartPreviousClose;
         
         let changeAmount = null, changePercent = null;
         if (meta.regularMarketPrice !== undefined && prevClose) {
