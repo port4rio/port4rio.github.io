@@ -761,8 +761,22 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
         portfolio.forEach(s => {
           prompt += `・${s.code} ${s.name}`;
           
+          // ▼ currentPricesから最新の現在値を取得する処理を追加
+          const currentData = currentPrices[s.code];
+          const currentPrice = (currentData && currentData.price) ? currentData.price : null;
+          
           if (s.shares > 0 && s.price > 0) {
-            prompt += `：${s.shares}株 (買値: ${s.price}円)`;
+            // 保有している場合（買値と現在値をセットで送る）
+            prompt += `：${s.shares}株 (買値: ${s.price}円`;
+            if (currentPrice) {
+              prompt += ` / 現在値: ${currentPrice}円`;
+            }
+            prompt += `)`;
+          } else {
+            // 株数未設定（監視のみ）の場合でも現在値だけは送る
+            if (currentPrice) {
+              prompt += ` (現在値: ${currentPrice}円)`;
+            }
           }
  
           prompt += `\n`;
