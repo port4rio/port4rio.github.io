@@ -317,24 +317,27 @@
 async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
+    // 更新ボタン(forceRefresh)が押されていない時だけキャッシュを使う
     if (!forceRefresh && cachedData) {
       try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
     
+    // キャッシュ回避のため、URLの末尾に現在時刻(&t=...)を付与
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d&t=${Date.now()}`;
     const proxies = [ url => `https://corsproxy.io/?${encodeURIComponent(url)}`, url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` ];
     
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed));
+        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed)); // 0.3秒間隔
         lastNetworkRequestTime = Date.now();
         const res = await fetch(getProxyUrl(targetUrl));
         if (!res.ok) continue;
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
-        let prevClose = meta.previousClose;
+        const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
+        let prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose);
         
         let changeAmount = null, changePercent = null;
         if (meta.regularMarketPrice !== undefined && prevClose) {
