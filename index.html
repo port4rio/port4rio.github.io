@@ -75,9 +75,18 @@
   .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; word-break: break-all; }
   
   .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
-  .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between; flex-wrap: wrap; }
+  .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between; }
   .calc-row:last-child { margin-bottom: 0; }
-  .calc-input { width: 72px; padding: 4px 2px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
+  input[type="number"].calc-input { 
+    width: 76px;             /* 6桁が余裕で入る幅 */
+    padding: 3px 4px;        /* 上下3px、左右4pxの小さな余白（全体設定を上書き） */
+    font-size: 12px;         /* 文字サイズを小さく */
+    height: auto;            /* 縦幅をリセット */
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    text-align: right; 
+    box-sizing: border-box; 
+  }
   
   /* ▼ フッター・サマリー周り ▼ */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
