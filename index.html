@@ -314,14 +314,16 @@
   // ==========================================
   // ▼ 株価取得とポートフォリオ管理 ▼
   // ==========================================
-  async function fetchOnlinePrice(code, forceRefresh = false) {
+async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
     if (!forceRefresh && cachedData) {
       try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d`;
+    
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d&t=${Date.now()}`;
     const proxies = [ url => `https://corsproxy.io/?${encodeURIComponent(url)}`, url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` ];
+    
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
@@ -331,8 +333,9 @@
         if (!res.ok) continue;
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
-        const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
-        let prevClose = closes.length >= 2 ? closes[closes.length - 2] : meta.previousClose;
+        
+        let prevClose = meta.previousClose;
+        
         let changeAmount = null, changePercent = null;
         if (meta.regularMarketPrice !== undefined && prevClose) {
           changeAmount = Math.round((meta.regularMarketPrice - prevClose) * 100) / 100;
