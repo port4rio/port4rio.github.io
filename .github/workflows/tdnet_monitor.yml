@@ -2,11 +2,11 @@ name: AI Earnings Monitor
 
 on:
   schedule:
-    # 1,4時間遅れる
-    - cron: '52 10 * * 1-5'
-      timezone: 'Asia/Tokyo'  # 月〜金の 10:52 (JST)
-    - cron: '19 14 * * 1-5'
-      timezone: 'Asia/Tokyo'  # 月〜金の 14:19 (JST)
+    # 1-5時間遅れる
+    - cron: '53 9 * * 1-5'
+      timezone: 'Asia/Tokyo'
+    - cron: '23 13 * * 1-5'
+      timezone: 'Asia/Tokyo'
   workflow_dispatch: # 手動実行用
 
 jobs:
