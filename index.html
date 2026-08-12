@@ -74,10 +74,10 @@
   .stat-label { font-size: 11px; color: #7f8c8d; }
   .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; }
   
-  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
-  .calc-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; }
-  .calc-input::-webkit-outer-spin-button, .calc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .calc-input[type=number] { -moz-appearance: textfield; }
+  .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
+  .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between;}
+  .calc-row:last-child { margin-bottom: 0; }
+  .calc-input { width: 80px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-size: 12px; box-sizing: border-box; }
   
   /* ▼ フッター・サマリー周り ▼ */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -523,13 +523,15 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
           <div class="calc-area">
-            目標: <input type="number" class="calc-input" style="width: 70px;" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})"> 円
-            <span style="font-weight: bold; margin-left: 5px;">利益: <span id="target-result-${index}">-</span></span>
-          </div>
-          <div class="calc-area">
-            <input type="number" class="calc-input" style="width: 60px;" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">株を
-            <input type="number" class="calc-input" style="width: 70px;" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})">円で買増すと
-            <span style="font-weight: bold; color: #1976d2; margin-left: 5px;">平均: <span id="add-result-${index}">-</span></span>
+            <div class="calc-row">
+                <span>目標: <input type="number" class="calc-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="円"></span>
+                <span>利益: <span id="target-result-${index}" style="font-weight: bold;">- 円</span></span>
+            </div>
+            <div class="calc-row">
+                <span>追加: <input type="number" class="calc-input" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="株">
+                <input type="number" class="calc-input" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="円"></span>
+                <span>平均: <span id="add-result-${index}" style="font-weight: bold;">- 円</span></span>
+            </div>
           </div>
         </div>`;
       grid.appendChild(tile);
