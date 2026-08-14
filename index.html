@@ -620,22 +620,22 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
             
             let arrowHtml = '';
             let displayTitle = item.title;
-            // ▼ 検知する記号リストに 👆 と 👇 を追加
-            const arrowMatch = item.title.match(/[👆👇⤴⤵→]/);
+            // ▼ 正規表現の最後に「u」をつけて、絵文字を正しく1文字として認識させる
+            const arrowMatch = item.title.match(/[👆👇⤴⤵→]/u);
             
             if (arrowMatch) {
               const arrow = arrowMatch[0];
-              // ▼ タイトル本文から記号を取り除く処理にも 👆 と 👇 を追加
-              displayTitle = item.title.replace(/[👆👇⤴⤵→]/g, '').trim();
+              // ▼ 本文からの除去処理にも「gu」を追加して確実に消す
+              displayTitle = item.title.replace(/[👆👇⤴⤵→]/gu, '').trim();
               
-              if (arrow === '👆' || arrow === '⤴') {
-                // 上方修正・増配・プラス成長 は緑色（.plusクラス）
+              if (arrow === '👆' || arrow === '👇') {
+                // 絵文字の色はそのまま（OS標準の黄色）にし、位置とサイズだけ合わせる
+                arrowHtml = `<span style="font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              } else if (arrow === '⤴') {
                 arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '👇' || arrow === '⤵') {
-                // 下方修正・減配・マイナス成長 は赤色（.minusクラス）
+              } else if (arrow === '⤵') {
                 arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
               } else if (arrow === '→') {
-                // それ以外 は青色
                 arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
               }
             }
