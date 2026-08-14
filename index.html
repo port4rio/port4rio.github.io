@@ -796,7 +796,9 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
  
         geminiConsultBtn.href =
           "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
- 
+        geminiConsultBtn.target = '_blank';
+        geminiConsultBtn.rel = 'noopener';
+        
         geminiBtnArea.style.display = 'block';
       } else {
         geminiBtnArea.style.display = 'none';
