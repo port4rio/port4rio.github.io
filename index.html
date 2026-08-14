@@ -620,10 +620,13 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
             
             let arrowHtml = '';
             let displayTitle = item.title;
-            const arrowMatch = item.title.match(/[⤴⤵→]/);
+            // ▼ 検知する記号リストに 👆 と 👇 を追加
+            const arrowMatch = item.title.match(/[👆👇⤴⤵→]/);
             
             if (arrowMatch) {
-              const arrow = arrowMatch[0]; displayTitle = item.title.replace(/[⤴⤵→]/g, '').trim();
+              const arrow = arrowMatch[0];
+              // ▼ タイトル本文から記号を取り除く処理にも 👆 と 👇 を追加
+              displayTitle = item.title.replace(/[👆👇⤴⤵→]/g, '').trim();
               if (arrow === '⤴') arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
               else if (arrow === '⤵') arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
               else if (arrow === '→') arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
