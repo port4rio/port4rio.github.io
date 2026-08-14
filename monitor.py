@@ -5,8 +5,6 @@ import time
 import re
 import requests
 from bs4 import BeautifulSoup
-import io
-from pypdf import PdfReader, PdfWriter
 import google.generativeai as genai
 
 # ==========================================
@@ -121,7 +119,7 @@ def get_tdnet_pdfs(target_codes):
     return found_pdfs
 
 # ==========================================
-# 3. PDF抽出＆Geminiによる要約（OCR直接読み込み対応版）
+# 3. PDF抽出＆Geminiによる要約（PDF直接読み込み特化版）
 # ==========================================
 def summarize_pdfs(pdf_list):
     news_data = []
@@ -144,37 +142,15 @@ def summarize_pdfs(pdf_list):
             print(f"  └ 1. TDnetからPDFをダウンロード中...")
             res = requests.get(item['pdf_url'], timeout=20)
             
-            print(f"  └ 2. PDFからテキストを抽出中...")
-            reader = PdfReader(io.BytesIO(res.content))
-            text = "".join([reader.pages[i].extract_text() for i in range(min(2, len(reader.pages)))])
+            print(f"  └ 2. PDFをAI用に準備中...")
+            doc_part = {
+                "mime_type": "application/pdf",
+                "data": res.content
+            }
             
-            request_contents = []
-            
-            # ▼ Secretから秘伝のタレ（ベースの指示）を読み込む
+            # ▼ Secretから秘伝のタレ（プロンプト）を読み込み、PDFとセットにする
             base_prompt = os.environ.get("SECRET_PROMPT", "要約を作成してください。")
-            
-            if not text.strip():
-                print(f"  └ ⚠️ テキスト抽出不能。AIの視覚機能(OCR)でPDFを直接読み込みます。")
-                writer = PdfWriter()
-                for i in range(min(2, len(reader.pages))):
-                    writer.add_page(reader.pages[i])
-                
-                short_pdf_stream = io.BytesIO()
-                writer.write(short_pdf_stream)
-                pdf_bytes = short_pdf_stream.getvalue()
-                
-                doc_part = {
-                    "mime_type": "application/pdf",
-                    "data": pdf_bytes
-                }
-                
-                # ▼ 画像の場合は、秘伝のタレと画像データをセットにして渡す
-                request_contents = [base_prompt, doc_part]
-            
-            else:
-                # ▼ テキストの場合は、秘伝のタレのあとに抽出したテキストを合体させる
-                prompt = f"{base_prompt}\n\n【テキスト】\n{text}"
-                request_contents = [prompt]
+            request_contents = [base_prompt, doc_part]
 
             print(f"  └ 3. Geminiへ要約をリクエスト中...")
             max_retries = 3
