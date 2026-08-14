@@ -627,9 +627,17 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               const arrow = arrowMatch[0];
               // ▼ タイトル本文から記号を取り除く処理にも 👆 と 👇 を追加
               displayTitle = item.title.replace(/[👆👇⤴⤵→]/g, '').trim();
-              if (arrow === '⤴') arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              else if (arrow === '⤵') arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              else if (arrow === '→') arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              
+              if (arrow === '👆' || arrow === '⤴') {
+                // 上方修正・増配・プラス成長 は緑色（.plusクラス）
+                arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              } else if (arrow === '👇' || arrow === '⤵') {
+                // 下方修正・減配・マイナス成長 は赤色（.minusクラス）
+                arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              } else if (arrow === '→') {
+                // それ以外 は青色
+                arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+              }
             }
             
             const card = document.createElement('div'); card.className = 'ai-news-card';
