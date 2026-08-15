@@ -648,10 +648,6 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               }
             }
             
-            // ▼ 追加: X(Twitter)へシェアする文章とURLを生成
-            const shareText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n${displayTitle}\n\n#Port4rio\nhttps://port4rio.github.io`;
-            const xShareUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-            
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
@@ -666,16 +662,38 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               <div class="ai-news-body">
                 <div class="ai-news-summary">${item.summary}</div>
                 
-                <!-- ▼ 修正: PDFリンクとXシェアボタンを横並びに配置 -->
                 <div style="margin-top: 12px; display: flex; gap: 15px; align-items: center;">
                   <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
-                  <a href="${xShareUrl}" target="_blank" class="ai-news-link" style="margin-top: 0; display: inline-flex; align-items: center; gap: 4px; color: #1da1f2; text-decoration: none; font-weight: bold;">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    <span>ポスト</span>
-                  </a>
+                  <button class="ai-news-link share-btn" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: bold; font-size: 1em;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                    <span>シェアする</span>
+                  </button>
                 </div>
               </div>
             `;
+            
+            // ▼ 追加: Web Share API（共有メニュー）を呼び出す処理
+            const shareBtn = card.querySelector('.share-btn');
+            shareBtn.addEventListener('click', async (e) => {
+              e.stopPropagation(); // クリック時にアコーディオンが閉じるのを防ぐ
+              
+              // 見出しと本文をガッチャンコした、美しいシェア用テキスト
+              const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n${item.summary}\n\n#Port4rio\nhttps://port4rio.github.io`;
+              
+              try {
+                if (navigator.share) {
+                  // スマホ等ならOS標準の共有メニューを開く（LINE, X, Threads, メールなどに対応）
+                  await navigator.share({ text: fullText });
+                } else {
+                  // Web Share API非対応のPCブラウザ用フォールバック（クリップボードにコピー）
+                  await navigator.clipboard.writeText(fullText);
+                  showToast("文章をコピーしました（そのままSNSに貼り付けられます）");
+                }
+              } catch (err) {
+                // ユーザーがシェアをキャンセルした場合などは何もしない
+              }
+            });
+            
             list.appendChild(card);
           });
           document.getElementById('ai-news-container').style.display = 'block';
