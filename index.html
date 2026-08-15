@@ -704,7 +704,7 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               e.stopPropagation();
               try {
                 await navigator.clipboard.writeText(fullText);
-                showToast("全文をコピーしました！");
+                showToast("コピーしました！");
               } catch(err) {}
             });
             
