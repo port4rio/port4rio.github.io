@@ -648,6 +648,10 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               }
             }
             
+            // ▼ 追加: X(Twitter)へシェアする文章とURLを生成
+            const shareText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n${displayTitle}\n\n#Port4rio\nhttps://port4rio.github.io`;
+            const xShareUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+            
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
@@ -661,7 +665,15 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               </div>
               <div class="ai-news-body">
                 <div class="ai-news-summary">${item.summary}</div>
-                <a href="${item.url}" target="_blank" class="ai-news-link">📄 元のPDFを開く</a>
+                
+                <!-- ▼ 修正: PDFリンクとXシェアボタンを横並びに配置 -->
+                <div style="margin-top: 12px; display: flex; gap: 15px; align-items: center;">
+                  <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
+                  <a href="${xShareUrl}" target="_blank" class="ai-news-link" style="margin-top: 0; display: inline-flex; align-items: center; gap: 4px; color: #1da1f2; text-decoration: none; font-weight: bold;">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    <span>ポスト</span>
+                  </a>
+                </div>
               </div>
             `;
             list.appendChild(card);
