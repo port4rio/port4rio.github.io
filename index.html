@@ -648,6 +648,16 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               }
             }
             
+            // ▼ 追加: 本文を改行で分割し、空行を除外してリスト化する
+            const summaryLines = item.summary.split('\n').filter(line => line.trim() !== '');
+            
+            // ▼ 追加: 4行目（JavaScriptは0番目から数えるのでインデックスは「3」）を抽出
+            // （※もし行数が足りない場合は、一番最後の行を抽出するように安全対策）
+            const spicyReview = summaryLines.length > 3 ? summaryLines[3] : summaryLines[summaryLines.length - 1];
+            
+            // ▼ 修正: 全文ではなく「見出し ＋ 辛口総評」だけでシェアテキストを生成する
+            const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
+            
             const card = document.createElement('div'); card.className = 'ai-news-card';
             card.innerHTML = `
               <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
@@ -662,36 +672,43 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               <div class="ai-news-body">
                 <div class="ai-news-summary">${item.summary}</div>
                 
-                <div style="margin-top: 12px; display: flex; gap: 15px; align-items: center;">
+                <!-- ▼ 修正: クリックで各種SNSボタンが展開するUI -->
+                <div style="margin-top: 12px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                   <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
-                  <button class="ai-news-link share-btn" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: bold; font-size: 1em;">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                    <span>シェアする</span>
-                  </button>
+                  
+                  <div class="share-wrapper" style="display: inline-flex; align-items: center; gap: 10px;">
+                    <button class="share-toggle-btn ai-news-link" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: bold; font-size: 1em;">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                      <span>シェア</span>
+                    </button>
+                    
+                    <div class="share-icons" style="display: none; gap: 8px; align-items: center; font-size: 0.8em; font-weight: bold;">
+                      <a href="https://x.com/intent/tweet?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 3px 8px; border-radius: 4px;">𝕏</a>
+                      <a href="https://line.me/R/msg/text/?${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: #00B900; border: 1px solid #00B900; padding: 3px 8px; border-radius: 4px;">LINE</a>
+                      <a href="https://www.threads.net/intent/post?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 3px 8px; border-radius: 4px;">Threads</a>
+                      <button class="copy-btn" style="background: none; border: 1px solid currentColor; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 1em; color: inherit;">📋 コピー</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             `;
             
-            // ▼ 追加: Web Share API（共有メニュー）を呼び出す処理
-            const shareBtn = card.querySelector('.share-btn');
-            shareBtn.addEventListener('click', async (e) => {
-              e.stopPropagation(); // クリック時にアコーディオンが閉じるのを防ぐ
-              
-              // 見出しと本文をガッチャンコした、美しいシェア用テキスト
-              const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n${item.summary}\n\n#Port4rio\nhttps://port4rio.github.io`;
-              
+            // ▼ シェアボタンを押した時の展開アニメーションとコピー処理
+            const shareToggle = card.querySelector('.share-toggle-btn');
+            const shareIcons = card.querySelector('.share-icons');
+            const copyBtn = card.querySelector('.copy-btn');
+            
+            shareToggle.addEventListener('click', (e) => {
+              e.stopPropagation();
+              shareIcons.style.display = shareIcons.style.display === 'none' ? 'flex' : 'none';
+            });
+
+            copyBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
               try {
-                if (navigator.share) {
-                  // スマホ等ならOS標準の共有メニューを開く（LINE, X, Threads, メールなどに対応）
-                  await navigator.share({ text: fullText });
-                } else {
-                  // Web Share API非対応のPCブラウザ用フォールバック（クリップボードにコピー）
-                  await navigator.clipboard.writeText(fullText);
-                  showToast("文章をコピーしました（そのままSNSに貼り付けられます）");
-                }
-              } catch (err) {
-                // ユーザーがシェアをキャンセルした場合などは何もしない
-              }
+                await navigator.clipboard.writeText(fullText);
+                showToast("全文をコピーしました！");
+              } catch(err) {}
             });
             
             list.appendChild(card);
