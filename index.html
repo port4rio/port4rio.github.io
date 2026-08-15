@@ -101,7 +101,7 @@
   
   /* ▼ ダークモード対応とAI秘書のデザイン ▼ */
   .ai-secretary-container { position: fixed; bottom: 15px; left: 15px; z-index: 1000; display: flex; align-items: flex-end; gap: 10px; max-width: calc(100vw - 30px); pointer-events: none; }
-  .ai-mascot { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 35px; pointer-events: auto; cursor: pointer; transition: transform 0.2s; background: transparent; border: none;}
+  .ai-mascot { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 35px; pointer-events: auto; cursor: pointer; transition: transform 0.2s, opacity 0.3s; background: transparent; border: none;}
   .ai-mascot:active { transform: scale(0.9); }
   .ai-bubble { background: #fff; padding: 12px 25px 12px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); font-size: 13px; position: relative; border: 1px solid #eee; pointer-events: auto; line-height: 1.5; }
   .ai-bubble::before { content: ""; position: absolute; bottom: 15px; left: -7px; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 7px solid #fff; }
@@ -220,7 +220,8 @@
 
 <!-- ▼ AI秘書（フローティング） ▼ -->
 <div id="ai-secretary" class="ai-secretary-container">
-  <div class="ai-mascot" id="ai-mascot-img" onclick="openSecretary()">🤖</div>
+  <!-- ▼ 修正箇所: onclickをtoggleRobotSpeechに変更、title追加 ▼ -->
+  <div class="ai-mascot" id="ai-mascot-img" onclick="toggleRobotSpeech(this)" title="クリックでセリフをオン/オフ">🤖</div>
   <div class="ai-bubble" id="ai-bubble">
     <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
@@ -703,16 +704,33 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
     }
   }
 
+  // ▼ 修正: 閉じる時にアイコンを半透明にする
   function closeSecretary() {
     isSecretaryClosed = true;
     document.getElementById('ai-bubble').style.display = 'none';
+    const mascot = document.getElementById('ai-mascot-img');
+    if (mascot) mascot.style.opacity = '0.5';
     clearTimeout(secretaryTimeout); currentTypewriterId++; 
   }
 
+  // ▼ 修正: 開く時にアイコンの透明度を通常に戻す
   function openSecretary() {
     isSecretaryClosed = false;
     document.getElementById('ai-bubble').style.display = 'block';
+    const mascot = document.getElementById('ai-mascot-img');
+    if (mascot) mascot.style.opacity = '1';
     updateAISecretary(secLastVal, secLastProf); 
+  }
+
+  // ▼ 追加: ロボットの顔を押した時に呼び出される関数
+  function toggleRobotSpeech() {
+    if (isSecretaryClosed) {
+      // 閉じている状態なら開く
+      openSecretary();
+    } else {
+      // 開いている状態なら閉じる
+      closeSecretary();
+    }
   }
 
   function updateAISecretary(totalVal, totalProf) {
@@ -797,13 +815,13 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
               prompt += ` (現在値: ${currentPrice}円)`;
             }
           }
- 
+ 
           prompt += `\n`;
         });
- 
+ 
         geminiConsultBtn.href =
           "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
-        geminiConsultBtn.target = '_blank';
+        geminiConsultBtn.target = '_blank';
         geminiConsultBtn.rel = 'noopener';
         
         geminiBtnArea.style.display = 'block';
