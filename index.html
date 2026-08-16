@@ -39,6 +39,10 @@
   .ai-news-summary { font-size: 0.9em; color: #444; line-height: 1.6; white-space: pre-wrap; }
   .ai-news-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none; }
   
+  /* ▼ 追加: さらに読み込むボタン ▼ */
+  .load-more-btn { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 10px; background: #e0eaf5; color: #1976d2; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+  .load-more-btn:hover { background: #d0e0f0; }
+
   /* ▼ 銘柄追加フォーム ▼ */
   .input-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: center; }
   .form-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%; justify-content: center;}
@@ -129,6 +133,8 @@
     .ai-news-link { color: #64b5f6; }
     .plus { color: #66bb6a !important; }
     .minus { color: #ef5350 !important; }
+    .load-more-btn { background: #2a3a4a; color: #64b5f6; }
+    .load-more-btn:hover { background: #3a4a5a; }
     
     /* ▼ ロボットの顔ネオン発光 ＆ セリフの通常表示 ▼ */
     .ai-mascot { color: #ffcce0; text-shadow: 0 0 5px rgba(255, 204, 224, 0.7), 0 0 10px rgba(255, 204, 224, 0.3); }
@@ -220,8 +226,7 @@
 
 <!-- ▼ AI秘書（フローティング） ▼ -->
 <div id="ai-secretary" class="ai-secretary-container">
-  <!-- ▼ 修正箇所: onclickをtoggleRobotSpeechに変更、title追加 ▼ -->
-  <div class="ai-mascot" id="ai-mascot-img" onclick="toggleRobotSpeech(this)" title="クリックでセリフをオン/オフ">🤖</div>
+  <div class="ai-mascot" id="ai-mascot-img" onclick="toggleRobotSpeech()" title="クリックでセリフをオン/オフ">🤖</div>
   <div class="ai-bubble" id="ai-bubble">
     <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
@@ -253,6 +258,11 @@
   let aiNewsState = 1; 
   let isFetchingPrices = false; 
   let isSecretaryClosed = false; 
+  
+  // ▼ AIニュースのページネーション用変数
+  let allNewsData = [];
+  let currentNewsDisplayCount = 0;
+  const NEWS_CHUNK_SIZE = 300;
   
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
@@ -322,7 +332,7 @@
   // ==========================================
   // ▼ 株価取得とポートフォリオ管理 ▼
   // ==========================================
-async function fetchOnlinePrice(code, forceRefresh = false) {
+  async function fetchOnlinePrice(code, forceRefresh = false) {
     const cacheKey = `price_cache_${code}`;
     const cachedData = localStorage.getItem(cacheKey);
     // 更新ボタン(forceRefresh)が押されていない時だけキャッシュを使う
@@ -346,7 +356,6 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
         
         const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
         let prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose);
-        //let prevClose = meta.previousClose || meta.chartPreviousClose;
         
         let changeAmount = null, changePercent = null;
         if (meta.regularMarketPrice !== undefined && prevClose) {
@@ -579,13 +588,16 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
   }
 
   // ==========================================
-  // ▼ AI決算サマリー機能 ▼
+  // ▼ AI決算サマリー機能（無限スクロール＆全件ソート対応） ▼
   // ==========================================
   function toggleNewsSort() {
     isNewsSortOwned = !isNewsSortOwned;
     const btn = document.getElementById('ai-news-sort-btn');
     btn.innerText = isNewsSortOwned ? '保有優先' : '⇅新着順';
-    loadAINews(); 
+    
+    // ソート条件が変わったら、表示件数を300に戻してリストをリセット
+    currentNewsDisplayCount = NEWS_CHUNK_SIZE; 
+    sortAndRenderNews(true); 
   }
 
   function toggleAINews() {
@@ -606,110 +618,16 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
     try {
       const response = await fetch('ai_news.json?t=' + new Date().getTime());
       if (response.ok) {
-        const newsData = await response.json();
-        if (newsData && newsData.length > 0) {
+        const rawData = await response.json();
+        if (rawData && rawData.length > 0) {
           
-          if (isNewsSortOwned) {
-            newsData.sort((a, b) => {
-              const aOwned = portfolio.some(s => s.code === a.code);
-              const bOwned = portfolio.some(s => s.code === b.code);
-              if (aOwned && !bOwned) return -1;
-              if (!aOwned && bOwned) return 1;
-              return 0; 
-            });
-          }
-
-          const list = document.getElementById('ai-news-list'); list.innerHTML = '';
-          newsData.forEach(item => {
-            const isOwned = portfolio.some(s => s.code === item.code);
-            const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
-            const stockName = meigaraDict[item.code]?.shortName || '---';
-            const shortDate = item.date.substring(5).replace('-', '/');
-            
-            let arrowHtml = '';
-            let displayTitle = item.title;
-            // ▼ 正規表現の最後に「u」をつけて、絵文字を正しく1文字として認識させる
-            const arrowMatch = item.title.match(/[👆👇⤴⤵→]/u);
-            
-            if (arrowMatch) {
-              const arrow = arrowMatch[0];
-              // ▼ 本文からの除去処理にも「gu」を追加して確実に消す
-              displayTitle = item.title.replace(/[👆👇⤴⤵→]/gu, '').trim();
-              
-              if (arrow === '👆' || arrow === '👇') {
-                // 絵文字の色はそのまま（OS標準の黄色）にし、位置とサイズだけ合わせる
-                arrowHtml = `<span style="font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '⤴') {
-                arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '⤵') {
-                arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              } else if (arrow === '→') {
-                arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
-              }
-            }
-            
-            // ▼ 追加: 本文を改行で分割し、空行を除外してリスト化する
-            const summaryLines = item.summary.split('\n').filter(line => line.trim() !== '');
-            const spicyReview = summaryLines.length > 3 ? summaryLines[3] : summaryLines[summaryLines.length - 1];
-            
-            // ▼ シェア用のリッチテキストを生成
-            const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
-            
-            const card = document.createElement('div'); card.className = 'ai-news-card';
-            card.innerHTML = `
-              <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
-                <div class="ai-news-title" style="line-height: 1.4;">
-                  <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
-                  ${badgeHtml}
-                  <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
-                  ${arrowHtml}
-                  <span style="font-weight: bold;">${displayTitle}</span>
-                </div>
-              </div>
-              <div class="ai-news-body">
-                <div class="ai-news-summary">${item.summary}</div>
-                
-                <!-- ▼ 修正: サイズ感と高さをピッタリ揃えたスッキリUI -->
-                <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                  <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
-                  
-                  <div class="share-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
-                    <button class="share-toggle-btn ai-news-link" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: normal; font-size: 0.85em;">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                      <span>シェア</span>
-                    </button>
-                    
-                    <div class="share-icons" style="display: none; gap: 6px; align-items: center; font-size: 0.75em; font-weight: bold;">
-                      <a href="https://x.com/intent/tweet?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">𝕏</a>
-                      <a href="https://line.me/R/msg/text/?${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: #00B900; border: 1px solid #00B900; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">LINE</a>
-                      <a href="https://www.threads.net/intent/post?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">Threads</a>
-                      <button class="copy-btn" style="background: none; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: inherit; font-weight: bold; color: inherit; line-height: 1.2; display: inline-block;">Copy</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
-            
-            // ▼ シェアボタンを押した時の展開アニメーションとコピー処理
-            const shareToggle = card.querySelector('.share-toggle-btn');
-            const shareIcons = card.querySelector('.share-icons');
-            const copyBtn = card.querySelector('.copy-btn');
-            
-            shareToggle.addEventListener('click', (e) => {
-              e.stopPropagation();
-              shareIcons.style.display = shareIcons.style.display === 'none' ? 'flex' : 'none';
-            });
-
-            copyBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              try {
-                await navigator.clipboard.writeText(fullText);
-                showToast("コピーしました！");
-              } catch(err) {}
-            });
-            
-            list.appendChild(card);
-          });
+          // ▼ 全データを変数に保存し、「元の新着順」を記憶するための番号を振る
+          allNewsData = rawData.map((item, index) => ({ ...item, originalIndex: index }));
+          
+          // 初回ロード時は300件を描画
+          currentNewsDisplayCount = NEWS_CHUNK_SIZE;
+          sortAndRenderNews(true);
+          
           document.getElementById('ai-news-container').style.display = 'block';
           document.getElementById('ai-news-list').style.display = 'block';
           document.getElementById('ai-news-list').style.maxHeight = '35vh';
@@ -718,6 +636,125 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
         }
       }
     } catch (e) {}
+  }
+
+  function sortAndRenderNews(isReset = false) {
+    const list = document.getElementById('ai-news-list');
+    
+    if (isReset) {
+      list.innerHTML = ''; // リセット時は画面を空にする
+      
+      if (isNewsSortOwned) {
+        // 全何千件のデータに対して、保有銘柄を一番上へ持ってくるソートを実行
+        allNewsData.sort((a, b) => {
+          const aOwned = portfolio.some(s => s.code === a.code);
+          const bOwned = portfolio.some(s => s.code === b.code);
+          if (aOwned && !bOwned) return -1;
+          if (!aOwned && bOwned) return 1;
+          return a.originalIndex - b.originalIndex; // 同じ条件同士なら元の新着順を維持
+        });
+      } else {
+        // 新着順に戻す（記憶しておいた番号順に並べ直す）
+        allNewsData.sort((a, b) => a.originalIndex - b.originalIndex);
+      }
+    }
+
+    // どこからどこまでを描画するか計算
+    const startIndex = isReset ? 0 : currentNewsDisplayCount - NEWS_CHUNK_SIZE;
+    const endIndex = Math.min(currentNewsDisplayCount, allNewsData.length);
+    
+    // 既存の「さらに読み込む」ボタンがあれば一旦消す
+    const oldBtn = document.getElementById('load-more-news-btn');
+    if (oldBtn) oldBtn.remove();
+
+    // 指定された件数（300件分）のカードを生成して画面に追加
+    for (let i = startIndex; i < endIndex; i++) {
+      const item = allNewsData[i];
+      const isOwned = portfolio.some(s => s.code === item.code);
+      const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
+      const stockName = meigaraDict[item.code]?.shortName || '---';
+      const shortDate = item.date.substring(5).replace('-', '/');
+      
+      let arrowHtml = '';
+      let displayTitle = item.title;
+      const arrowMatch = item.title.match(/[👆👇⤴⤵→]/u);
+      
+      if (arrowMatch) {
+        const arrow = arrowMatch[0];
+        displayTitle = item.title.replace(/[👆👇⤴⤵→]/gu, '').trim();
+        if (arrow === '👆' || arrow === '👇') arrowHtml = `<span style="font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+        else if (arrow === '⤴') arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+        else if (arrow === '⤵') arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+        else if (arrow === '→') arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
+      }
+
+      const summaryLines = item.summary.split('\n').filter(line => line.trim() !== '');
+      const spicyReview = summaryLines.length > 3 ? summaryLines[3] : summaryLines[summaryLines.length - 1];
+      const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
+
+      const card = document.createElement('div'); card.className = 'ai-news-card';
+      card.innerHTML = `
+        <div class="ai-news-header" onclick="const b = this.nextElementSibling; b.style.display = b.style.display === 'block' ? 'none' : 'block';">
+          <div class="ai-news-title" style="line-height: 1.4;">
+            <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
+            ${badgeHtml}
+            <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
+            ${arrowHtml}
+            <span style="font-weight: bold;">${displayTitle}</span>
+          </div>
+        </div>
+        <div class="ai-news-body">
+          <div class="ai-news-summary">${item.summary}</div>
+          <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
+            <div class="share-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
+              <button class="share-toggle-btn ai-news-link" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: normal; font-size: 0.85em;">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                <span>シェア</span>
+              </button>
+              <div class="share-icons" style="display: none; gap: 6px; align-items: center; font-size: 0.75em; font-weight: bold;">
+                <a href="https://x.com/intent/tweet?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">𝕏</a>
+                <a href="https://line.me/R/msg/text/?${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: #00B900; border: 1px solid #00B900; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">LINE</a>
+                <a href="https://www.threads.net/intent/post?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">Threads</a>
+                <button class="copy-btn" style="background: none; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: inherit; font-weight: bold; color: inherit; line-height: 1.2; display: inline-block;">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const shareToggle = card.querySelector('.share-toggle-btn');
+      const shareIcons = card.querySelector('.share-icons');
+      const copyBtn = card.querySelector('.copy-btn');
+      
+      shareToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shareIcons.style.display = shareIcons.style.display === 'none' ? 'flex' : 'none';
+      });
+
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(fullText);
+          showToast("全文をコピーしました！");
+        } catch(err) {}
+      });
+
+      list.appendChild(card);
+    }
+
+    // ▼ まだ描画されていない残りのニュースがある場合、「さらに読み込む」ボタンを追加
+    if (endIndex < allNewsData.length) {
+      const moreBtn = document.createElement('button');
+      moreBtn.id = 'load-more-news-btn';
+      moreBtn.className = 'load-more-btn';
+      moreBtn.innerText = `さらに読み込む (残り ${allNewsData.length - endIndex} 件)`;
+      moreBtn.onclick = function() {
+        currentNewsDisplayCount += NEWS_CHUNK_SIZE;
+        sortAndRenderNews(false); // isReset=falseなので、今のリストの末尾に追加する
+      };
+      list.appendChild(moreBtn);
+    }
   }
 
   // ==========================================
@@ -748,7 +785,6 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
     }
   }
 
-  // ▼ 修正: 閉じる時にアイコンを半透明にする
   function closeSecretary() {
     isSecretaryClosed = true;
     document.getElementById('ai-bubble').style.display = 'none';
@@ -757,7 +793,6 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
     clearTimeout(secretaryTimeout); currentTypewriterId++; 
   }
 
-  // ▼ 修正: 開く時にアイコンの透明度を通常に戻す
   function openSecretary() {
     isSecretaryClosed = false;
     document.getElementById('ai-bubble').style.display = 'block';
@@ -766,13 +801,10 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
     updateAISecretary(secLastVal, secLastProf); 
   }
 
-  // ▼ 追加: ロボットの顔を押した時に呼び出される関数
   function toggleRobotSpeech() {
     if (isSecretaryClosed) {
-      // 閉じている状態なら開く
       openSecretary();
     } else {
-      // 開いている状態なら閉じる
       closeSecretary();
     }
   }
@@ -842,19 +874,16 @@ async function fetchOnlinePrice(code, forceRefresh = false) {
         portfolio.forEach(s => {
           prompt += `・${s.code} ${s.name}`;
           
-          // ▼ currentPricesから最新の現在値を取得する処理を追加
           const currentData = currentPrices[s.code];
           const currentPrice = (currentData && currentData.price) ? currentData.price : null;
           
           if (s.shares > 0 && s.price > 0) {
-            // 保有している場合（買値と現在値をセットで送る）
             prompt += `：${s.shares}株 (買値: ${s.price}円`;
             if (currentPrice) {
               prompt += ` / 現在値: ${currentPrice}円`;
             }
             prompt += `)`;
           } else {
-            // 株数未設定（監視のみ）の場合でも現在値だけは送る
             if (currentPrice) {
               prompt += ` (現在値: ${currentPrice}円)`;
             }
