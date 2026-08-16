@@ -208,8 +208,8 @@ if __name__ == "__main__":
             try: existing_news = json.load(f)
             except: pass
 
-    seven_days_ago = (today - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
-    existing_news = [n for n in existing_news if n['date'] >= seven_days_ago]
+    limit_date = (today - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    existing_news = [n for n in existing_news if n['date'] >= limit_date]
 
     # ② 【重要】今日すでに処理済みの銘柄コードをリストアップ
     today_str_json = today.strftime('%Y-%m-%d')
