@@ -208,7 +208,7 @@ if __name__ == "__main__":
             try: existing_news = json.load(f)
             except: pass
 
-    limit_date = (today - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    limit_date = (today - datetime.timedelta(days=90)).strftime('%Y-%m-%d')
     existing_news = [n for n in existing_news if n['date'] >= limit_date]
 
     # ② 【重要】今日すでに処理済みの銘柄コードをリストアップ
