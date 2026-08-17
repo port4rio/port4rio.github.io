@@ -201,17 +201,17 @@ def summarize_pdfs(pdf_list):
 if __name__ == "__main__":
     pdfs_to_process = get_tdnet_pdfs(todays_codes)
     
-    # ① 既存のニュースを読み込む
+    # ① 既存のニュースを読み込む（90日前まで保持）
     existing_news = []
     if os.path.exists("ai_news.json"):
         with open("ai_news.json", "r", encoding="utf-8") as f:
             try: existing_news = json.load(f)
             except: pass
 
-    limit_date = (today - datetime.timedelta(days=90)).strftime('%Y-%m-%d')
+    limit_date = (today - datetime.timedelta(days=99)).strftime('%Y-%m-%d')
     existing_news = [n for n in existing_news if n['date'] >= limit_date]
 
-    # ② 【重要】今日すでに処理済みの銘柄コードをリストアップ
+    # ② 今日すでに処理済みの銘柄コードをリストアップ（同日の二重取得防止）
     today_str_json = today.strftime('%Y-%m-%d')
     processed_codes_today = {n['code'] for n in existing_news if n['date'] == today_str_json}
     
@@ -226,13 +226,17 @@ if __name__ == "__main__":
     if unprocessed_pdfs:
         new_news = summarize_pdfs(unprocessed_pdfs)
         
-    # ④ 既存データと新規データを合体させる
-    news_dict = { n['code']: n for n in existing_news }
-    for n in new_news:
-        news_dict[n['code']] = n
-        
-    final_news = list(news_dict.values())
-    final_news.reverse()
+    # ④ 既存データと新規データを合体させる（過去の1Q・2Qも残るようURLで重複排除）
+    combined_news = new_news + existing_news
+    
+    final_news = []
+    seen_urls = set()
+    for n in combined_news:
+        if n['url'] not in seen_urls:
+            final_news.append(n)
+            seen_urls.add(n['url'])
+            
+    # 日付の降順（新しい順）で安定ソート
     final_news.sort(key=lambda x: x['date'], reverse=True)
     
     with open("ai_news.json", "w", encoding="utf-8") as f:
