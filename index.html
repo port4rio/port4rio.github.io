@@ -27,19 +27,14 @@
   .ai-news-toggle { font-size: 0.8em; color: #666; cursor: pointer; font-weight: normal; padding: 4px; }
   
   #ai-news-list { overflow-y: auto; padding-right: 5px; transition: max-height 0.3s ease-in-out; }
-  
   .ai-news-card { background: #fff; padding: 12px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-  
   .ai-news-header { cursor: pointer; display: flex; flex-direction: column; gap: 4px; user-select: none; }
-  .ai-news-meta { font-size: 0.85em; color: #7f8c8d; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
   .badge-owned { background: #ff9800; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
   .ai-news-title { font-weight: bold; font-size: 1em; color: #2c3e50; line-height: 1.3; }
-  
   .ai-news-body { display: none; padding-top: 10px; margin-top: 8px; border-top: 1px dashed #eee; }
   .ai-news-summary { font-size: 0.9em; color: #444; line-height: 1.6; white-space: pre-wrap; }
   .ai-news-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #1976d2; text-decoration: none; }
   
-  /* ▼ 追加: さらに読み込むボタン ▼ */
   .load-more-btn { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 10px; background: #e0eaf5; color: #1976d2; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; transition: background 0.2s; }
   .load-more-btn:hover { background: #d0e0f0; }
 
@@ -57,38 +52,40 @@
   #price { width: 100px; }
   button.add-btn { padding: 8px 20px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
   
-  /* ▼ ポートフォリオのタイル一覧 ▼ */
-  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
-  .stock-tile { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; }
+  /* ▼ ポートフォリオのタイル一覧（2列化＆オープン時全幅化） ▼ */
+  .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  @media (min-width: 600px) {
+    .portfolio-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+  }
   
-  .tile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; padding-right: 24px; }
-  .title-group { display: flex; align-items: baseline; gap: 6px; overflow: hidden; flex: 1; padding-right: 5px; }
-  .tile-code { font-size: 0.85em; color: #7f8c8d; flex-shrink: 0; }
-  .tile-name { font-size: 1.1em; font-weight: bold; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
-  .color-dot { font-size: 0.9em; margin-right: 2px; }
+  .stock-tile { background: #fff; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; transition: all 0.2s; }
+  .stock-tile.is-open { grid-column: 1 / -1; cursor: default; }
   
-  .schedule-info { font-size: 11px; color: #ff9800; font-weight: bold; text-align: right; line-height: 1.3; flex-shrink: 0; }
+  .tile-header-2line { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; padding-right: 20px; }
+  .title-group-2line { display: flex; flex-direction: column; overflow: hidden; flex: 1; padding-right: 4px; }
+  .tile-name-small { font-size: 0.9em; font-weight: bold; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile-code-sub { font-size: 0.75em; color: #7f8c8d; font-weight: bold; }
   
-  .delete-btn { position: absolute; top: 12px; right: 8px; background: transparent; border: none; font-size: 14px; color: #999; cursor: pointer; padding: 4px; line-height: 1; z-index: 10; }
+  .schedule-info { font-size: 10px; color: #ff9800; font-weight: bold; text-align: right; line-height: 1.2; flex-shrink: 0; }
+  .delete-btn { position: absolute; top: 8px; right: 6px; background: transparent; border: none; font-size: 13px; color: #999; cursor: pointer; padding: 4px; line-height: 1; z-index: 10; }
   .delete-btn:hover { color: #333; }
   
-  .tile-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
-  .tile-label { color: #7f8c8d; }
+  .tile-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
+  .tile-label { color: #7f8c8d; font-size: 0.85em; }
   .tile-value { font-weight: bold; }
   .plus { color: #388e3c !important; } .minus { color: #d32f2f !important; }
   
-  .details-btn { text-align: center; font-size: 12px; color: #1976d2; margin-top: 10px; cursor: pointer; background: #f0f7ff; padding: 6px; border-radius: 4px; }
-  .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; }
+  .details-content { display: none; margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; cursor: auto; }
   
-  .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center; }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-  .stat-label { font-size: 11px; color: #7f8c8d; }
-  .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; word-break: break-all; }
+  .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; text-align: center; }
+  .stat-item { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .stat-label { font-size: 10px; color: #7f8c8d; }
+  .stat-value { font-size: 11px; font-weight: bold; color: #2c3e50; word-break: break-all; }
   
-  .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
-  .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between; }
+  .calc-area { background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 11px; }
+  .calc-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; justify-content: space-between; }
   .calc-row:last-child { margin-bottom: 0; }
-  input[type="number"].calc-input { width: 70px; padding: 3px 4px;font-size: 12px; height: auto; border: 1px solid #ccc; border-radius: 4px; text-align: right; box-sizing: border-box; }
+  input[type="number"].calc-input { width: 65px; padding: 2px 4px; font-size: 11px; height: auto; border: 1px solid #ccc; border-radius: 4px; text-align: right; box-sizing: border-box; }
   
   /* ▼ フッター・サマリー周り ▼ */
   .summary-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -98,12 +95,11 @@
   .reload-btn { padding: 6px 14px; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 12px; margin-top: 4px; width: 100%; cursor: pointer;}
   
   .disclaimer { font-size: 10px; color: #999; text-align: center; margin-top: 40px; margin-bottom: 20px; line-height: 1.5; }
-  
   #toast { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 9999; font-size: 13px; }
   .footer-logo { text-align: center; margin-top: 40px; margin-bottom: -20px; }
   .footer-logo span { cursor: pointer; font-size: 1.2em; font-weight: bold; color: #1976d2; display: inline-block; padding: 10px; user-select: none; }
   
-  /* ▼ ダークモード対応とAI秘書のデザイン ▼ */
+  /* ▼ AI秘書 ▼ */
   .ai-secretary-container { position: fixed; bottom: 15px; left: 15px; z-index: 1000; display: flex; align-items: flex-end; gap: 10px; max-width: calc(100vw - 30px); pointer-events: none; }
   .ai-mascot { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 35px; pointer-events: auto; cursor: pointer; transition: transform 0.2s, opacity 0.3s; background: transparent; border: none;}
   .ai-mascot:active { transform: scale(0.9); }
@@ -113,22 +109,21 @@
   
   @media (prefers-color-scheme: dark) {
     body { background-color: #121212; color: #e0e0e0; color-scheme: dark; }
-    h1, .tile-name, .ai-news-title, .footer-logo span { color: #ffffff !important; }
+    h1, .tile-name-small, .ai-news-title, .footer-logo span { color: #ffffff !important; }
     .input-card, .stock-tile, .summary-card, .ai-news-card, .suggest-box { background-color: #1e1e1e !important; box-shadow: 0 2px 8px rgba(255,255,255,0.02); }
     input[type="text"], input[type="number"], .calc-input, select { background-color: #2d2d2d; color: #fff; border-color: #444 !important; }
     .ai-news-container { background: linear-gradient(135deg, #1a2a3a, #111d27); border-left-color: #64b5f6; }
     .ai-news-container h2 { color: #64b5f6; }
     .ai-news-toggle { color: #bbb; }
-    .tile-header, .details-content, .ai-news-body, .tool-area-divider { border-color: #444 !important; }
+    .tile-header-2line, .details-content, .tool-area-divider { border-color: #444 !important; }
     .details-stats, .calc-area { background-color: #2a2a2a; }
-    .stat-label, .tile-label, .ai-news-meta { color: #bbb !important; }
+    .stat-label, .tile-label { color: #bbb !important; }
     .schedule-info { color: #ffb74d !important; }
     .stat-value, .tile-value { color: #e0e0e0; }
     .suggest-item { border-bottom-color: #444; }
     .suggest-item:hover { background-color: #333; }
     .delete-btn { color: #888; }
     .delete-btn:hover { color: #eee; }
-    .details-btn { background: #2a3a4a; color: #64b5f6; }
     .ai-news-summary { color: #ccc; }
     .ai-news-link { color: #64b5f6; }
     .plus { color: #66bb6a !important; }
@@ -136,17 +131,10 @@
     .load-more-btn { background: #2a3a4a; color: #64b5f6; }
     .load-more-btn:hover { background: #3a4a5a; }
     
-    /* ▼ ロボットの顔ネオン発光 ＆ セリフの通常表示 ▼ */
     .ai-mascot { color: #ffcce0; text-shadow: 0 0 5px rgba(255, 204, 224, 0.7), 0 0 10px rgba(255, 204, 224, 0.3); }
     .ai-bubble { background: #1e1e1e; border-color: #444; color: #e0e0e0; text-shadow: none; }
     .ai-bubble::before { border-right-color: #1e1e1e; }
-    
-    /* ▼ AIサマリー専用ダークスクロールバー ▼ */
     #ai-news-list { scrollbar-color: #555 transparent; scrollbar-width: thin; }
-    #ai-news-list::-webkit-scrollbar { width: 6px; }
-    #ai-news-list::-webkit-scrollbar-track { background: transparent; }
-    #ai-news-list::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-    #ai-news-list::-webkit-scrollbar-thumb:hover { background: #777; }
   }
 </style>
 </head>
@@ -171,11 +159,11 @@
 <div class="input-card">
   <div class="form-group">
     <div class="search-container">
-      <input type="text" id="search-input" placeholder="辞書を準備中..." autocomplete="off">
+      <input type="text" id="search-input" placeholder="銘柄コード/ティッカー(TSLA等)" autocomplete="off">
       <div id="suggest-box" class="suggest-box"></div>
     </div>
-    <input type="number" id="shares" step="100" placeholder="株数">
-    <input type="number" id="price" placeholder="買値(円)">
+    <input type="number" id="shares" step="any" placeholder="株数">
+    <input type="number" id="price" step="any" placeholder="買値">
     <button class="add-btn" onclick="addStock()">登録</button>
   </div>
 </div>
@@ -196,7 +184,7 @@
   </div>
 </div>
 
-<!-- ▼ ツールエリア（並べ替え・バックアップ） ▼ -->
+<!-- ▼ ツールエリア ▼ -->
 <div class="summary-card" style="margin-bottom: 20px;">
   <div style="text-align: center; margin-bottom: 12px;">
     <span style="font-size: 13px; font-weight: bold; margin-right: 8px;">🔄 並べ替え:</span>
@@ -224,14 +212,13 @@
   取得している株価・決算予定・AI要約等の正確性は保証されません。
 </div>
 
-<!-- ▼ AI秘書（フローティング） ▼ -->
+<!-- ▼ AI秘書 ▼ -->
 <div id="ai-secretary" class="ai-secretary-container">
   <div class="ai-mascot" id="ai-mascot-img" onclick="toggleRobotSpeech()" title="クリックでセリフをオン/オフ">🤖</div>
   <div class="ai-bubble" id="ai-bubble">
     <button class="ai-bubble-close" onclick="closeSecretary()">✕</button>
     <span id="ai-secretary-text">読み込み中...</span>
     
-    <!-- ▼ AI相談ボタン ▼ -->
     <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
       <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
     </div>
@@ -239,15 +226,12 @@
 </div>
 
 <script>
-  // ==========================================
-  // ▼ 共通変数と基本設定 ▼
-  // ==========================================
   let portfolio = JSON.parse(localStorage.getItem('portfolio')) || [];
   let currentPrices = {};
   let meigaraDict = {};
   let upcomingSchedule = {};
+  let marketIndices = {};
   
-  // AI秘書・AIニュース制御用
   let secretaryPages = [];
   let secretaryPageIdx = 0;
   let secretaryTimeout = null;
@@ -259,7 +243,6 @@
   let isFetchingPrices = false; 
   let isSecretaryClosed = false; 
   
-  // ▼ AIニュースのページネーション用変数
   let allNewsData = [];
   let currentNewsDisplayCount = 0;
   const NEWS_CHUNK_SIZE = 300;
@@ -279,9 +262,6 @@
     return str.replace(/[\s ]+/g, '').toUpperCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/[\u3041-\u3096]/g, m => String.fromCharCode(m.charCodeAt(0) + 0x0060));
   }
 
-  // ==========================================
-  // ▼ 銘柄検索と辞書読み込み ▼
-  // ==========================================
   const searchInput = document.getElementById('search-input');
   const suggestBox = document.getElementById('suggest-box');
 
@@ -317,7 +297,6 @@
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        // 1列目(0)がコード、2列目(1)が名称、3列目(2)が略称
         let code = cols[0]; if (!code) continue;
         meigaraDict[code] = { 
           shortName: cols[2] || cols[1] || '', 
@@ -325,29 +304,27 @@
           searchShortName: normalizeForSearch(cols[2] || cols[1] || '') 
         };
       }
-      searchInput.placeholder = "銘柄検索 (2文字以上)";
-    } catch (e) { searchInput.placeholder = "辞書読込エラー"; }
+    } catch (e) {}
   }
 
-  // ==========================================
-  // ▼ 株価取得とポートフォリオ管理 ▼
-  // ==========================================
-  async function fetchOnlinePrice(code, forceRefresh = false) {
-    const cacheKey = `price_cache_${code}`;
+  // ▼ 株価・指数・為替の万能取得関数 ▼
+  async function fetchOnlinePrice(symbol, forceRefresh = false) {
+    const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
+    const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
+    
+    const cacheKey = `price_cache_${symbol}`;
     const cachedData = localStorage.getItem(cacheKey);
-    // 更新ボタン(forceRefresh)が押されていない時だけキャッシュを使う
     if (!forceRefresh && cachedData) {
       try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
     
-    // キャッシュ回避のため、URLの末尾に現在時刻(&t=...)を付与
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?interval=1d&range=5d&t=${Date.now()}`;
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&t=${Date.now()}`;
     const proxies = [ url => `https://corsproxy.io/?${encodeURIComponent(url)}`, url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` ];
     
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed)); // 0.3秒間隔
+        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed));
         lastNetworkRequestTime = Date.now();
         const res = await fetch(getProxyUrl(targetUrl));
         if (!res.ok) continue;
@@ -362,7 +339,10 @@
           changeAmount = Math.round((meta.regularMarketPrice - prevClose) * 100) / 100;
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
-        const priceResult = { price: meta.regularMarketPrice, change_amount: changeAmount, change_percent: changePercent };
+        
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        const priceResult = { price: meta.regularMarketPrice, change_amount: changeAmount, change_percent: changePercent, isUs: isUs, fetchTime: timeStr };
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
         return priceResult;
       } catch (e) {}
@@ -371,29 +351,46 @@
     return null;
   }
 
+  async function fetchMarketOverview() {
+    const symbols = [
+      { key: 'usdjpy', sym: 'JPY=X' },
+      { key: 'n225', sym: '^N225' },
+      { key: 'sp500', sym: '^GSPC' },
+      { key: 'dji', sym: '^DJI' },
+      { key: 'btc', sym: 'BTC-USD' },
+      { key: 'oil', sym: 'CL=F' }
+    ];
+    for (let item of symbols) {
+      const data = await fetchOnlinePrice(item.sym, false);
+      if (data) marketIndices[item.key] = data;
+    }
+  }
+
   async function refreshAllPrices(forceRefresh = false) {
-    if (portfolio.length === 0) return;
-    if (forceRefresh) showToast("株価を更新中...");
-    
+    if (forceRefresh) showToast("市況・株価を更新中...");
     isFetchingPrices = true; 
     
+    await fetchMarketOverview();
     for (let i = 0; i < portfolio.length; i++) {
       const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
-      if (data) { currentPrices[portfolio[i].code] = data; renderTiles(); }
+      if (data) currentPrices[portfolio[i].code] = data;
+      renderTiles();
     }
     
     isFetchingPrices = false; 
     if (forceRefresh) showToast("完了しました");
-    
     renderTiles();
   }
 
   async function addStock() {
     const searchVal = searchInput.value.trim();
-    const codeMatch = searchVal.match(/^([A-Za-z0-9]{4})/);
-    if(!codeMatch) { showToast("銘柄を選択してください"); return; }
-    const code = codeMatch[1].toUpperCase();
-    const name = meigaraDict[code]?.shortName || '---';
+    if(!searchVal) { showToast("銘柄を入力してください"); return; }
+    
+    let code = searchVal.toUpperCase();
+    const codeMatch = searchVal.match(/^([A-Za-z0-9]{1,5})/);
+    if (codeMatch) code = codeMatch[1].toUpperCase();
+
+    const name = meigaraDict[code]?.shortName || code; 
     portfolio.push({ code, name, shares: parseFloat(document.getElementById('shares').value)||0, price: parseFloat(document.getElementById('price').value)||0 });
     localStorage.setItem('portfolio', JSON.stringify(portfolio));
     searchInput.value = ''; document.getElementById('shares').value = ''; document.getElementById('price').value = '';
@@ -401,50 +398,69 @@
     const data = await fetchOnlinePrice(code, true); if (data) { currentPrices[code] = data; renderTiles(); }
   }
 
-  function deleteStock(index) { portfolio.splice(index, 1); localStorage.setItem('portfolio', JSON.stringify(portfolio)); renderTiles(); loadAINews(); }
+  function deleteStock(index, event) { 
+    if (event) event.stopPropagation();
+    portfolio.splice(index, 1); 
+    localStorage.setItem('portfolio', JSON.stringify(portfolio)); 
+    renderTiles(); 
+    loadAINews(); 
+  }
   
-  function toggleDetails(index) {
-    const el = document.getElementById(`details-${index}`); const btn = document.getElementById(`details-btn-${index}`);
-    if (el.style.display === 'block') { el.style.display = 'none'; btn.innerText = '▼ 詳しく見る'; }
-    else { el.style.display = 'block'; btn.innerText = '▲ 閉じる'; }
+  function toggleTileDetails(index) {
+    const tile = document.getElementById(`stock-tile-${index}`);
+    const details = document.getElementById(`details-${index}`);
+    if (details.style.display === 'block') {
+      details.style.display = 'none';
+      tile.classList.remove('is-open');
+    } else {
+      details.style.display = 'block';
+      tile.classList.add('is-open');
+    }
   }
 
-  function calcTarget(index, buyPrice, shares) {
-    const targetPrice = document.getElementById(`target-${index}`).value;
+  function calcTarget(index, buyPrice, shares, isUs) {
+    const targetPrice = parseFloat(document.getElementById(`target-${index}`).value);
     const resultEl = document.getElementById(`target-result-${index}`);
-    if (!shares || !buyPrice) { resultEl.innerText = '株数・買値が未設定'; resultEl.className = ''; return; }
+    if (!shares || !buyPrice) { resultEl.innerText = '未設定'; resultEl.className = ''; return; }
+    
+    const usdRate = marketIndices['usdjpy']?.price || 155.0;
     if (targetPrice) {
-      const profit = (targetPrice - buyPrice) * shares;
-      resultEl.innerText = `${profit > 0 ? '+' : ''}${profit.toLocaleString()}円`;
+      let profit = (targetPrice - buyPrice) * shares;
+      if (isUs) profit *= usdRate; 
+      resultEl.innerText = `${profit > 0 ? '+' : ''}${Math.round(profit).toLocaleString()}円`;
       resultEl.className = profit > 0 ? 'plus' : (profit < 0 ? 'minus' : '');
     } else { resultEl.innerText = '- 円'; resultEl.className = ''; }
   }
 
-  function calcAverage(index, currentBuyPrice, currentShares) {
+  function calcAverage(index, currentBuyPrice, currentShares, unitSymbol) {
       const addShares = parseFloat(document.getElementById(`add-shares-${index}`).value);
       const addPrice = parseFloat(document.getElementById(`add-price-${index}`).value);
       const resultEl = document.getElementById(`add-result-${index}`);
-      if (!currentShares || !currentBuyPrice) { resultEl.innerText = '元データが未設定'; return; }
+      if (!currentShares || !currentBuyPrice) { resultEl.innerText = '未設定'; return; }
       if (addShares && addPrice) {
           const totalCost = (currentBuyPrice * currentShares) + (addPrice * addShares);
           const totalShares = currentShares + addShares;
           const avgPrice = totalCost / totalShares;
-          resultEl.innerText = `${avgPrice.toLocaleString(undefined, {maximumFractionDigits: 1})} 円`;
-      } else { resultEl.innerText = '- 円'; }
+          resultEl.innerText = `${unitSymbol}${avgPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+      } else { resultEl.innerText = `- ${unitSymbol}`; }
   }
 
   function sortPortfolio() {
     const type = document.getElementById('sort-select').value;
     if (type === 'default') return;
+    const usdRate = marketIndices['usdjpy']?.price || 155.0;
     
     portfolio.sort((a, b) => {
       const dataA = currentPrices[a.code] || {}; const dataB = currentPrices[b.code] || {};
-      const priceA = dataA.price || 0; const priceB = dataB.price || 0;
+      const isUsA = /^[A-Za-z]+$/.test(a.code); const isUsB = /^[A-Za-z]+$/.test(b.code);
+      const priceA = (dataA.price || 0) * (isUsA ? usdRate : 1); 
+      const priceB = (dataB.price || 0) * (isUsB ? usdRate : 1);
+      
       if (type === 'code') return a.code.localeCompare(b.code); 
       else if (type === 'value') return (priceB * (b.shares || 0)) - (priceA * (a.shares || 0)); 
       else if (type === 'profit_rate') {
-        const profA = a.price > 0 && priceA > 0 ? ((priceA - a.price) / a.price) : -9999;
-        const profB = b.price > 0 && priceB > 0 ? ((priceB - b.price) / b.price) : -9999;
+        const profA = a.price > 0 && dataA.price > 0 ? ((dataA.price - a.price) / a.price) : -9999;
+        const profB = b.price > 0 && dataB.price > 0 ? ((dataB.price - b.price) / b.price) : -9999;
         return profB - profA;
       } else if (type === 'dod_change') {
         const dodA = dataA.change_percent || -9999; const dodB = dataB.change_percent || -9999;
@@ -486,31 +502,47 @@
     const grid = document.getElementById('portfolio-grid'); grid.innerHTML = '';
     let totalValue = 0, totalProfit = 0; let pieData = [];
     let totalDodAmount = 0, totalPrevValue = 0;
+    const usdRate = marketIndices['usdjpy']?.price || 155.0;
 
     portfolio.forEach((stock, index) => {
       const stockData = currentPrices[stock.code];
+      const isUs = /^[A-Za-z]+$/.test(stock.code);
+      const unitSymbol = isUs ? '$' : '';
+      const shareUnit = isUs ? '株' : '株';
       const hasCost = stock.shares > 0 && stock.price > 0;
+      
       let cPrice = '取得中...', cStr = '-', vStr = '-', pStr = '-', pClass = '', cClass = '';
       const color = pColors[index % pColors.length];
 
       if (stockData && stockData.price !== null) {
-        cPrice = stockData.price.toLocaleString() + '円';
+        cPrice = `${unitSymbol}${stockData.price.toLocaleString()}`;
         if (stockData.change_amount !== null) {
             const sign = stockData.change_amount > 0 ? '+' : '';
-            cStr = `${sign}${stockData.change_amount.toLocaleString()}円 (${sign}${stockData.change_percent}%)`;
+            cStr = `${sign}${stockData.change_amount.toLocaleString()} (${sign}${stockData.change_percent}%)`;
             cClass = stockData.change_amount > 0 ? 'plus' : (stockData.change_amount < 0 ? 'minus' : '');
         }
         if (hasCost) {
-            const val = stockData.price * stock.shares; const prof = (stockData.price - stock.price) * stock.shares;
-            totalValue += val; totalProfit += prof;
+            const rawVal = stockData.price * stock.shares; 
+            const rawProf = (stockData.price - stock.price) * stock.shares;
+            
+            const valJpy = isUs ? (rawVal * usdRate) : rawVal;
+            const profJpy = isUs ? (rawProf * usdRate) : rawProf;
+            
+            totalValue += valJpy; totalProfit += profJpy;
+            
             if (stockData.change_amount !== null) {
-                totalDodAmount += stockData.change_amount * stock.shares;
-                totalPrevValue += (stockData.price - stockData.change_amount) * stock.shares;
+                const dodJpy = (stockData.change_amount * stock.shares) * (isUs ? usdRate : 1);
+                const prevJpy = ((stockData.price - stockData.change_amount) * stock.shares) * (isUs ? usdRate : 1);
+                totalDodAmount += dodJpy;
+                totalPrevValue += prevJpy;
             }
 
-            vStr = val.toLocaleString() + '円'; pStr = (prof > 0 ? '+' : '') + prof.toLocaleString() + '円';
-            pClass = prof > 0 ? 'plus' : (prof < 0 ? 'minus' : '');
-            if (val > 0) pieData.push({ name: stock.name, val: val, color: color });
+            vStr = Math.round(valJpy).toLocaleString() + '円'; 
+            pStr = (profJpy > 0 ? '+' : '') + Math.round(profJpy).toLocaleString() + '円';
+            pClass = profJpy > 0 ? 'plus' : (profJpy < 0 ? 'minus' : '');
+            
+            const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
+            if (valJpy > 0) pieData.push({ name: displayName, val: valJpy, color: color });
         }
       }
 
@@ -520,44 +552,51 @@
         scheduleHtml = `<div class="schedule-info">${scheduleInfo.date}(${scheduleInfo.time})<br>発表予定</div>`;
       }
 
-      const tile = document.createElement('div'); tile.className = 'stock-tile';
+      const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
+
+      const tile = document.createElement('div'); 
+      tile.className = 'stock-tile';
+      tile.id = `stock-tile-${index}`;
+      tile.onclick = function() { toggleTileDetails(index); };
+      
       tile.innerHTML = `
-        <button class="delete-btn" onclick="deleteStock(${index})">✕</button>
-        <div class="tile-header">
-          <div class="title-group">
-            <span class="tile-code">${stock.code}</span>
-            <span class="tile-name"><span class="color-dot" style="color:${color};">●</span>${stock.name||'---'}</span>
+        <button class="delete-btn" onclick="deleteStock(${index}, event)">✕</button>
+        <div class="tile-header-2line">
+          <div class="title-group-2line">
+            <span class="tile-name-small">${displayName}</span>
+            <span class="tile-code-sub">${stock.code}</span>
           </div>
           ${scheduleHtml}
         </div>
         <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${cPrice}</span></div>
         <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${cClass}">${cStr}</span></div>
-        <div class="details-btn" id="details-btn-${index}" onclick="toggleDetails(${index})">▼ 詳しく見る</div>
-        <div class="details-content" id="details-${index}">
+        
+        <div class="details-content" id="details-${index}" onclick="event.stopPropagation()">
           <div class="details-stats">
-            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${hasCost ? stock.shares.toLocaleString() + '株' : '-'}</span></div>
-            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${hasCost ? stock.price.toLocaleString() + '円' : '-'}</span></div>
+            <div class="stat-item"><span class="stat-label">保有数</span><span class="stat-value">${hasCost ? stock.shares.toLocaleString() + shareUnit : '-'}</span></div>
+            <div class="stat-item"><span class="stat-label">買値</span><span class="stat-value">${hasCost ? unitSymbol + stock.price.toLocaleString() : '-'}</span></div>
             <div class="stat-item"><span class="stat-label">評価額</span><span class="stat-value">${vStr}</span></div>
             <div class="stat-item"><span class="stat-label">損益</span><span class="stat-value ${pClass}">${pStr}</span></div>
           </div>
           <div class="calc-area">
             <div class="calc-row">
-                <span>目標: <input type="number" class="calc-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares})" placeholder="円"></span>
+                <span>目標: <input type="number" class="calc-input" id="target-${index}" oninput="calcTarget(${index}, ${stock.price}, ${stock.shares}, ${isUs})" placeholder="${unitSymbol}"></span>
                 <span>利益: <span id="target-result-${index}" style="font-weight: bold;">- 円</span></span>
             </div>
             <div class="calc-row">
-                <span>追加: <input type="number" class="calc-input" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="株">
-                <input type="number" class="calc-input" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares})" placeholder="円"></span>
-                <span style="text-align: right;">平均: <span id="add-result-${index}" style="font-weight: bold; white-space: nowrap;">- 円</span></span>
+                <span>追加: <input type="number" class="calc-input" id="add-shares-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares}, '${unitSymbol}')" placeholder="${shareUnit}">
+                <input type="number" class="calc-input" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares}, '${unitSymbol}')" placeholder="${unitSymbol}"></span>
+                <span style="text-align: right;">平均: <span id="add-result-${index}" style="font-weight: bold; white-space: nowrap;">- ${unitSymbol}</span></span>
             </div>
           </div>
         </div>`;
       grid.appendChild(tile);
     });
     
-    document.getElementById('total-value').innerText = totalValue.toLocaleString() + '円';
-    document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '円';
+    document.getElementById('total-value').innerText = Math.round(totalValue).toLocaleString() + '円';
+    document.getElementById('total-profit').innerText = (totalProfit > 0 ? '+' : '') + Math.round(totalProfit).toLocaleString() + '円';
     document.getElementById('total-profit').className = totalProfit > 0 ? 'plus' : (totalProfit < 0 ? 'minus' : '');
+    
     const totalDodEl = document.getElementById('total-dod');
     if (totalDodEl) {
       let dodPercent = 0;
@@ -573,7 +612,7 @@
       pieData.forEach(item => {
         let percent = (item.val / totalValue) * 100;
         gradientStr.push(`${item.color} ${cumulativePercent}% ${cumulativePercent + percent}%`);
-        tooltipLines.push(`${item.name}: ${item.val.toLocaleString()}円 (${percent.toFixed(1)}%)`);
+        tooltipLines.push(`${item.name}: ${Math.round(item.val).toLocaleString()}円 (${percent.toFixed(1)}%)`);
         cumulativePercent += percent;
       });
       pieChart.style.background = `conic-gradient(${gradientStr.join(', ')})`;
@@ -583,19 +622,14 @@
       pieChart.title = "銘柄を登録すると内訳グラフが表示されます";
     }
     
-    // ▼ ここで最新情報を秘書に渡す ▼
     updateAISecretary(totalValue, totalProfit);
   }
 
-  // ==========================================
-  // ▼ AI決算サマリー機能（無限スクロール＆全件ソート対応） ▼
-  // ==========================================
+  // ▼ AI決算サマリー機能 ▼
   function toggleNewsSort() {
     isNewsSortOwned = !isNewsSortOwned;
     const btn = document.getElementById('ai-news-sort-btn');
     btn.innerText = isNewsSortOwned ? '保有優先' : '⇅新着順';
-    
-    // ソート条件が変わったら、表示件数を300に戻してリストをリセット
     currentNewsDisplayCount = NEWS_CHUNK_SIZE; 
     sortAndRenderNews(true); 
   }
@@ -620,11 +654,7 @@
       if (response.ok) {
         const rawData = await response.json();
         if (rawData && rawData.length > 0) {
-          
-          // ▼ 全データを変数に保存し、「元の新着順」を記憶するための番号を振る
           allNewsData = rawData.map((item, index) => ({ ...item, originalIndex: index }));
-          
-          // 初回ロード時は300件を描画
           currentNewsDisplayCount = NEWS_CHUNK_SIZE;
           sortAndRenderNews(true);
           
@@ -640,39 +670,32 @@
 
   function sortAndRenderNews(isReset = false) {
     const list = document.getElementById('ai-news-list');
-    
     if (isReset) {
-      list.innerHTML = ''; // リセット時は画面を空にする
-      
+      list.innerHTML = '';
       if (isNewsSortOwned) {
-        // 全何千件のデータに対して、保有銘柄を一番上へ持ってくるソートを実行
         allNewsData.sort((a, b) => {
           const aOwned = portfolio.some(s => s.code === a.code);
           const bOwned = portfolio.some(s => s.code === b.code);
           if (aOwned && !bOwned) return -1;
           if (!aOwned && bOwned) return 1;
-          return a.originalIndex - b.originalIndex; // 同じ条件同士なら元の新着順を維持
+          return a.originalIndex - b.originalIndex;
         });
       } else {
-        // 新着順に戻す（記憶しておいた番号順に並べ直す）
         allNewsData.sort((a, b) => a.originalIndex - b.originalIndex);
       }
     }
 
-    // どこからどこまでを描画するか計算
     const startIndex = isReset ? 0 : currentNewsDisplayCount - NEWS_CHUNK_SIZE;
     const endIndex = Math.min(currentNewsDisplayCount, allNewsData.length);
     
-    // 既存の「さらに読み込む」ボタンがあれば一旦消す
     const oldBtn = document.getElementById('load-more-news-btn');
     if (oldBtn) oldBtn.remove();
 
-    // 指定された件数（300件分）のカードを生成して画面に追加
     for (let i = startIndex; i < endIndex; i++) {
       const item = allNewsData[i];
       const isOwned = portfolio.some(s => s.code === item.code);
       const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
-      const stockName = meigaraDict[item.code]?.shortName || '---';
+      const stockName = meigaraDict[item.code]?.shortName || item.code; 
       const shortDate = item.date.substring(5).replace('-', '/');
       
       let arrowHtml = '';
@@ -743,7 +766,6 @@
       list.appendChild(card);
     }
 
-    // ▼ まだ描画されていない残りのニュースがある場合、「さらに読み込む」ボタンを追加
     if (endIndex < allNewsData.length) {
       const moreBtn = document.createElement('button');
       moreBtn.id = 'load-more-news-btn';
@@ -751,15 +773,13 @@
       moreBtn.innerText = `さらに読み込む (残り ${allNewsData.length - endIndex} 件)`;
       moreBtn.onclick = function() {
         currentNewsDisplayCount += NEWS_CHUNK_SIZE;
-        sortAndRenderNews(false); // isReset=falseなので、今のリストの末尾に追加する
+        sortAndRenderNews(false);
       };
       list.appendChild(moreBtn);
     }
   }
 
-  // ==========================================
   // ▼ AI秘書（アニメーション・判定・表示） ▼
-  // ==========================================
   async function typeWriter(html, id) {
     const el = document.getElementById('ai-secretary-text'); if (!el) return;
     el.innerHTML = ''; let i = 0, isTag = false, text = '';
@@ -802,11 +822,8 @@
   }
 
   function toggleRobotSpeech() {
-    if (isSecretaryClosed) {
-      openSecretary();
-    } else {
-      closeSecretary();
-    }
+    if (isSecretaryClosed) openSecretary();
+    else closeSecretary();
   }
 
   function updateAISecretary(totalVal, totalProf) {
@@ -824,6 +841,35 @@
     const runId = currentTypewriterId;
     secretaryPages = []; secretaryPageIdx = 0;
 
+    // ▼ 市況アナウンスのページ生成 ▼
+    if (marketIndices['usdjpy'] || marketIndices['n225']) {
+      let mHtml = `📊 <b>リアルタイム市況</b><br>`;
+      
+      if (marketIndices['n225']) {
+        const d = marketIndices['n225'];
+        const sign = d.change_amount > 0 ? '+' : '';
+        mHtml += `日経平均 ${Math.round(d.price).toLocaleString()} (${sign}${d.change_amount} ${sign}${d.change_percent}%)<br>`;
+      }
+      
+      if (marketIndices['usdjpy']) {
+        const d = marketIndices['usdjpy'];
+        mHtml += `ドル/円 ${d.price.toFixed(2)} <span style="font-size:0.85em; color:#7f8c8d;">(${d.fetchTime})</span><br>`;
+      }
+      
+      if (marketIndices['sp500']) {
+        const d = marketIndices['sp500'];
+        const sign = d.change_amount > 0 ? '+' : '';
+        mHtml += `S&P500 ${Math.round(d.price).toLocaleString()} (${sign}${d.change_percent}%)<br>`;
+      }
+      
+      if (marketIndices['btc']) {
+        const d = marketIndices['btc'];
+        mHtml += `BTC $${Math.round(d.price).toLocaleString()}<br>`;
+      }
+      
+      secretaryPages.push(mHtml);
+    }
+
     const hasAnyCost = portfolio.some(s => s.shares > 0 && s.price > 0);
 
     if (portfolio.length === 0) {
@@ -836,14 +882,17 @@
     } else {
       let earningsAlerts = [];
       portfolio.forEach(stock => {
-        if (upcomingSchedule[stock.code]) earningsAlerts.push(`<b>${stock.name}</b> (${upcomingSchedule[stock.code].date})`);
+        if (upcomingSchedule[stock.code]) earningsAlerts.push(`<b>${stock.name || stock.code}</b> (${upcomingSchedule[stock.code].date})`);
       });
       if (earningsAlerts.length > 0) secretaryPages.push(`📅 <b>決算接近中！</b><br>${earningsAlerts.join('<br>')}<br>発表が控えてるよ！🤖`);
 
+      const usdRate = marketIndices['usdjpy']?.price || 155.0;
       let displayTotalVal = 0;
       let validStocks = portfolio.map((s, idx) => {
+        const isUs = /^[A-Za-z]+$/.test(s.code);
         let price = (currentPrices[s.code] && currentPrices[s.code].price) ? currentPrices[s.code].price : s.price;
-        let val = price * s.shares; displayTotalVal += val;
+        let val = price * s.shares * (isUs ? usdRate : 1); 
+        displayTotalVal += val;
         return { ...s, originalIndex: idx, val: val };
       }).filter(s => s.val > 0);
       
@@ -855,7 +904,8 @@
         top5.forEach(s => {
           const color = pColors[s.originalIndex % pColors.length];
           const percent = ((s.val / displayTotalVal) * 100).toFixed(1);
-          rankHtml += `<span style="color:${color};">●</span>${s.name} ${Math.floor(s.val).toLocaleString()}円 (${percent}%)<br>`;
+          const name = s.name || meigaraDict[s.code]?.shortName || s.code;
+          rankHtml += `<span style="color:${color};">●</span>${name} ${Math.floor(s.val).toLocaleString()}円 (${percent}%)<br>`;
         });
         secretaryPages.push(rankHtml);
       }
@@ -872,31 +922,27 @@
         let prompt = `私の保有株ポートフォリオを分析し、今日知るべきニュース、資産を増やす戦略を教えてください。見やすい配当金カレンダーも。\n`;
         prompt += `挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n【保有株ポートフォリオ】\n`;
         portfolio.forEach(s => {
-          prompt += `・${s.code} ${s.name}`;
+          const displayName = s.name || meigaraDict[s.code]?.shortName || s.code;
+          const isUs = /^[A-Za-z]+$/.test(s.code);
+          const unit = isUs ? '$' : '円';
+          prompt += `・${s.code} ${displayName}`;
           
           const currentData = currentPrices[s.code];
           const currentPrice = (currentData && currentData.price) ? currentData.price : null;
           
           if (s.shares > 0 && s.price > 0) {
-            prompt += `：${s.shares}株 (買値: ${s.price}円`;
-            if (currentPrice) {
-              prompt += ` / 現在値: ${currentPrice}円`;
-            }
+            prompt += `：${s.shares}株 (買値: ${unit}${s.price}`;
+            if (currentPrice) prompt += ` / 現在値: ${unit}${currentPrice}`;
             prompt += `)`;
           } else {
-            if (currentPrice) {
-              prompt += ` (現在値: ${currentPrice}円)`;
-            }
+            if (currentPrice) prompt += ` (現在値: ${unit}${currentPrice})`;
           }
- 
           prompt += `\n`;
         });
  
-        geminiConsultBtn.href =
-          "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
+        geminiConsultBtn.href = "https://chatgpt.com/?q=" + encodeURIComponent(prompt);
         geminiConsultBtn.target = '_blank';
         geminiConsultBtn.rel = 'noopener';
-        
         geminiBtnArea.style.display = 'block';
       } else {
         geminiBtnArea.style.display = 'none';
@@ -905,15 +951,14 @@
     }
   }
 
-  // ==========================================
   // ▼ 初期化処理 ▼
-  // ==========================================
   async function init() {
     await loadDictionary();
     try {
       const res = await fetch('schedule.json?t=' + new Date().getTime());
       if (res.ok) upcomingSchedule = await res.json();
     } catch(e) {}
+    await fetchMarketOverview();
     renderTiles();
     refreshAllPrices(false);
     loadAINews();
