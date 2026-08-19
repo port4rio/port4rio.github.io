@@ -353,6 +353,7 @@
     return null;
   }
 
+  // ▼ 市況データ取得（非同期・バックグラウンド用） ▼
   async function fetchMarketOverview() {
     const symbols = [
       { key: 'usdjpy', sym: 'JPY=X' },
@@ -369,10 +370,14 @@
   }
 
   async function refreshAllPrices(forceRefresh = false) {
-    if (forceRefresh) showToast("市況・株価を更新中...");
+    if (forceRefresh) showToast("株価を更新中...");
     isFetchingPrices = true; 
     
-    await fetchMarketOverview();
+    // 市況データの取得は待たずに裏で並行処理
+    fetchMarketOverview().then(() => {
+      renderTiles();
+    });
+
     for (let i = 0; i < portfolio.length; i++) {
       const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
       if (data) currentPrices[portfolio[i].code] = data;
@@ -999,17 +1004,24 @@
     }
   }
 
-  // ▼ 初期化処理 ▼
+  // ▼ 高速な初期化処理（画面待たせゼロ） ▼
   async function init() {
+    // 0. ローカルデータで画面を即時描画（待たせない）
+    renderTiles();
+    
+    // 1. 辞書と決算スケジュールを読み込み
     await loadDictionary();
     try {
       const res = await fetch('schedule.json?t=' + new Date().getTime());
       if (res.ok) upcomingSchedule = await res.json();
     } catch(e) {}
-    await fetchMarketOverview();
+    
+    // 2. 辞書が載ったらタイルを再描画 ＆ AIサマリーを最優先ロード
     renderTiles();
-    refreshAllPrices(false);
     loadAINews();
+
+    // 3. 株価更新（市況取得も裏で並行処理）
+    refreshAllPrices(false);
   }
 
   init();
