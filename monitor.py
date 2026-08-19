@@ -167,8 +167,10 @@ def summarize_pdfs(pdf_list):
                     ai_response = model.generate_content(request_contents)
                     break 
                 except Exception as api_error:
-                    if "429" in str(api_error) and attempt < max_retries - 1:
-                        print(f"    ⚠️ API制限を検知。30秒待機して再試行します... ({attempt+1}/{max_retries})")
+                    err_msg = str(api_error)
+                    # ▼ 429(制限)だけでなく 504(タイムアウト) や Deadline も再試行対象に追加
+                    if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < max_retries - 1:
+                        print(f"    ⚠️ タイムアウト/制限を検知。30秒待機して再試行します... ({attempt+1}/{max_retries})")
                         time.sleep(30)
                     else:
                         raise api_error
