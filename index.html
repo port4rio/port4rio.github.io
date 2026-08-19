@@ -63,7 +63,6 @@
   .stock-tile { background: #fff; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; transition: all 0.2s; }
   .stock-tile.is-open { grid-column: span 2; cursor: default; }
   
-  /* グレー横線を削除・余白調整 */
   .tile-header-2line { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 2px; margin-bottom: 6px; padding-right: 20px; }
   .title-group-2line { display: flex; flex-direction: column; overflow: hidden; flex: 1; padding-right: 4px; }
   .tile-name-small { font-size: 0.95em; font-weight: bold; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -76,8 +75,10 @@
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
   .tile-label { color: #7f8c8d; font-size: 0.85em; }
   
-  /* 現在値数値を1段階大きく (15px) */
+  /* 現在値は15px、前日比(dod-value)は13pxに保持 */
   .tile-value { font-weight: bold; font-size: 15px; }
+  .tile-value.dod-value { font-size: 13px; }
+  
   .plus { color: #388e3c !important; } .minus { color: #d32f2f !important; }
   
   /* ▼ 詳細表示エリア ▼ */
@@ -86,10 +87,7 @@
   .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center; }
   .stat-item { display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: center; align-items: center; }
   
-  /* 項目名を1段階大きく (12px) */
   .stat-label { font-size: 12px; color: #7f8c8d; }
-  
-  /* 数値を1段階大きく (14px) ＆ 上下整列の最適化 */
   .stat-value { font-size: 14px; font-weight: bold; color: #2c3e50; word-break: break-all; line-height: 1.2; display: flex; align-items: center; justify-content: center; min-height: 20px; }
   
   .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
@@ -230,7 +228,7 @@
     <span id="ai-secretary-text">読み込み中...</span>
     
     <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
-      <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
+      <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 に相談</a>
     </div>
   </div>
 </div>
@@ -605,20 +603,20 @@
 
       const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
 
-      // ▼ 個別株用プロンプトの構築 ▼
+      // ▼ 個別株用ChatGPTプロンプト構築 ▼
       let indPrompt = `この株の最新情報とチャートを分析し、今後6か月の戦略を立ててください。挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
       const cPriceVal = (stockData && stockData.price !== null) ? stockData.price : null;
       
       let detailInfo = '';
       if (hasCost) {
-        detailInfo = `${stock.shares}株 買値:${unitSymbol}${stock.price}`;
-        if (cPriceVal !== null) detailInfo += ` 現在値:${unitSymbol}${cPriceVal}`;
+        detailInfo = `${stock.shares}株 買値:${stock.price}`;
+        if (cPriceVal !== null) detailInfo += ` 現在値:${cPriceVal}`;
       } else {
-        if (cPriceVal !== null) detailInfo = `現在値:${unitSymbol}${cPriceVal}`;
+        if (cPriceVal !== null) detailInfo = `現在値:${cPriceVal}`;
       }
       
       indPrompt += `${stock.code} ${displayName}:${detailInfo}`;
-      const indConsultUrl = "https://.com/?q=" + encodeURIComponent(indPrompt);
+      const indConsultUrl = "https://chatgpt.com/?q=" + encodeURIComponent(indPrompt);
 
       const tile = document.createElement('div'); 
       tile.className = 'stock-tile';
@@ -637,7 +635,7 @@
           ${scheduleHtml}
         </div>
         <div class="tile-row"><span class="tile-label">現在値</span> <span class="tile-value">${cPrice}</span></div>
-        <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value ${cClass}">${cStr}</span></div>
+        <div class="tile-row"><span class="tile-label">前日比</span> <span class="tile-value dod-value ${cClass}">${cStr}</span></div>
         
         <div class="details-content" id="details-${index}" onclick="event.stopPropagation()">
           <div class="details-stats">
@@ -1029,7 +1027,7 @@
     }
   }
 
-  // ▼ 高速な初期化処理 ▼
+  // ▼ 高速初期化処理 ▼
   async function init() {
     renderTiles();
     
