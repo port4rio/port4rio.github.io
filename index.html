@@ -63,7 +63,8 @@
   .stock-tile { background: #fff; border-radius: 8px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-top: 4px solid #1976d2; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; transition: all 0.2s; }
   .stock-tile.is-open { grid-column: span 2; cursor: default; }
   
-  .tile-header-2line { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; padding-right: 20px; }
+  /* グレー横線を削除・余白調整 */
+  .tile-header-2line { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 2px; margin-bottom: 6px; padding-right: 20px; }
   .title-group-2line { display: flex; flex-direction: column; overflow: hidden; flex: 1; padding-right: 4px; }
   .tile-name-small { font-size: 0.95em; font-weight: bold; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile-code-sub { font-size: 0.75em; color: #7f8c8d; font-weight: bold; }
@@ -74,16 +75,22 @@
   
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
   .tile-label { color: #7f8c8d; font-size: 0.85em; }
-  .tile-value { font-weight: bold; }
+  
+  /* 現在値数値を1段階大きく (15px) */
+  .tile-value { font-weight: bold; font-size: 15px; }
   .plus { color: #388e3c !important; } .minus { color: #d32f2f !important; }
   
   /* ▼ 詳細表示エリア ▼ */
   .details-content { display: none; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; cursor: auto; }
   
   .details-stats { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center; }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-  .stat-label { font-size: 11px; color: #7f8c8d; }
-  .stat-value { font-size: 12px; font-weight: bold; color: #2c3e50; word-break: break-all; }
+  .stat-item { display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: center; align-items: center; }
+  
+  /* 項目名を1段階大きく (12px) */
+  .stat-label { font-size: 12px; color: #7f8c8d; }
+  
+  /* 数値を1段階大きく (14px) ＆ 上下整列の最適化 */
+  .stat-value { font-size: 14px; font-weight: bold; color: #2c3e50; word-break: break-all; line-height: 1.2; display: flex; align-items: center; justify-content: center; min-height: 20px; }
   
   .calc-area { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
   .calc-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; justify-content: space-between; flex-wrap: wrap; }
@@ -118,7 +125,7 @@
     .ai-news-container { background: linear-gradient(135deg, #1a2a3a, #111d27); border-left-color: #64b5f6; }
     .ai-news-container h2 { color: #64b5f6; }
     .ai-news-toggle { color: #bbb; }
-    .tile-header-2line, .details-content, .tool-area-divider { border-color: #444 !important; }
+    .details-content, .tool-area-divider { border-color: #444 !important; }
     .details-stats, .calc-area { background-color: #2a2a2a; }
     .stat-label, .tile-label { color: #bbb !important; }
     .schedule-info { color: #ffb74d !important; }
@@ -353,7 +360,6 @@
     return null;
   }
 
-  // ▼ 市況データ取得（非同期・バックグラウンド用） ▼
   async function fetchMarketOverview() {
     const symbols = [
       { key: 'usdjpy', sym: 'JPY=X' },
@@ -373,7 +379,6 @@
     if (forceRefresh) showToast("株価を更新中...");
     isFetchingPrices = true; 
     
-    // 市況データの取得は待たずに裏で並行処理
     fetchMarketOverview().then(() => {
       renderTiles();
     });
@@ -600,6 +605,21 @@
 
       const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
 
+      // ▼ 個別株用ChatGPTプロンプトの構築 ▼
+      let indPrompt = `この株の最新情報とチャートを分析し、今後6か月の戦略を立ててください。挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
+      const cPriceVal = (stockData && stockData.price !== null) ? stockData.price : null;
+      
+      let detailInfo = '';
+      if (hasCost) {
+        detailInfo = `${stock.shares}株 買値:${unitSymbol}${stock.price}`;
+        if (cPriceVal !== null) detailInfo += ` 現在値:${unitSymbol}${cPriceVal}`;
+      } else {
+        if (cPriceVal !== null) detailInfo = `現在値:${unitSymbol}${cPriceVal}`;
+      }
+      
+      indPrompt += `${stock.code} ${displayName}:${detailInfo}`;
+      const indConsultUrl = "https://chatgpt.com/?q=" + encodeURIComponent(indPrompt);
+
       const tile = document.createElement('div'); 
       tile.className = 'stock-tile';
       tile.id = `stock-tile-${index}`;
@@ -636,6 +656,11 @@
                 <input type="number" class="calc-input" id="add-price-${index}" oninput="calcAverage(${index}, ${stock.price}, ${stock.shares}, '${inputUnit}')" placeholder="${inputUnit}"></span>
                 <span style="text-align: right;">平均: <span id="add-result-${index}" style="font-weight: bold; white-space: nowrap;">- ${inputUnit}</span></span>
             </div>
+          </div>
+          
+          <!-- ▼ 個別株用ChatGPTボタン ▼ -->
+          <div style="margin-top: 10px; text-align: right;">
+            <a href="${indConsultUrl}" target="_blank" rel="noopener" style="display: inline-block; padding: 5px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">🍥 ChatGPTに相談</a>
           </div>
         </div>`;
       grid.appendChild(tile);
@@ -1004,23 +1029,19 @@
     }
   }
 
-  // ▼ 高速な初期化処理（画面待たせゼロ） ▼
+  // ▼ 高速な初期化処理 ▼
   async function init() {
-    // 0. ローカルデータで画面を即時描画（待たせない）
     renderTiles();
     
-    // 1. 辞書と決算スケジュールを読み込み
     await loadDictionary();
     try {
       const res = await fetch('schedule.json?t=' + new Date().getTime());
       if (res.ok) upcomingSchedule = await res.json();
     } catch(e) {}
     
-    // 2. 辞書が載ったらタイルを再描画 ＆ AIサマリーを最優先ロード
     renderTiles();
     loadAINews();
 
-    // 3. 株価更新（市況取得も裏で並行処理）
     refreshAllPrices(false);
   }
 
