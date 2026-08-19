@@ -210,7 +210,7 @@ def summarize_pdfs(pdf_list):
 # 4. メイン処理 (過去ニュースの維持 + 重複スキップ + マージ)
 # ==========================================
 if __name__ == "__main__":
-    pdfs_to_process = get_tdnet_pdfs(todays_codes)
+    pdfs_to_process = get_tdnet_pdfs()
     
     # ① 既存のニュースを読み込む（90日前まで保持）
     existing_news = []
