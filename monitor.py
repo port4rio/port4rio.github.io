@@ -126,15 +126,21 @@ def get_tdnet_pdfs(target_codes):
     return found_pdfs
 
 # ==========================================
-# 3. PDF抽出＆Geminiによる要約（PDF直接読み込み特化版）
+# 3. PDF抽出＆Geminiによる要約
 # ==========================================
-def summarize_pdfs(pdf_list):
+def summarize_pdfs(pdf_list, target_date_str):
     news_data = []
     request_count = 0
     start_time = time.time()
     
+    # 手動レスキュー時の日付(YYYYMMDD)を YYYY-MM-DD に自動変換
+    if len(target_date_str) == 8:
+        formatted_date = f"{target_date_str[:4]}-{target_date_str[4:6]}-{target_date_str[6:]}"
+    else:
+        formatted_date = today.strftime('%Y-%m-%d')
+
     for item in pdf_list:
-        print(f"\n[{item['code']}] 処理開始...")
+        print(f"\n[{item['code']}] 処理開始 ({item.get('title', '決算短信')})...")
         try:
             current_time = time.time()
             if current_time - start_time > 60:
@@ -146,37 +152,33 @@ def summarize_pdfs(pdf_list):
                 request_count = 0
                 start_time = time.time()
 
-            print(f"  └ 1. TDnetからPDFをダウンロード中...")
             res = requests.get(item['pdf_url'], timeout=20)
-            
-            print(f"  └ 2. PDFをAI用に準備中...")
             doc_part = {
                 "mime_type": "application/pdf",
                 "data": res.content
             }
             
-            # ▼ Secretから秘伝のタレ（プロンプト）を読み込み、PDFとセットにする
             base_prompt = os.environ.get("SECRET_PROMPT", "要約を作成してください。")
             request_contents = [base_prompt, doc_part]
 
-            print(f"  └ 3. Geminiへ要約をリクエスト中...")
             max_retries = 3
             ai_response = None
             for attempt in range(max_retries):
                 try:
-                    ai_response = model.generate_content(request_contents)
+                    ai_response = model.generate_content(
+                        request_contents,
+                        request_options={"timeout": 180} # 応答待ち最大3分
+                    )
                     break 
                 except Exception as api_error:
                     err_msg = str(api_error)
-                    # ▼ 429(制限)だけでなく 504(タイムアウト) や Deadline も再試行対象に追加
                     if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < max_retries - 1:
-                        print(f"    ⚠️ タイムアウト/制限を検知。30秒待機して再試行します... ({attempt+1}/{max_retries})")
+                        print(f"    ⚠️ 制限/タイムアウト検知。30秒待機して再試行... ({attempt+1}/{max_retries})")
                         time.sleep(30)
                     else:
                         raise api_error
             
             request_count += 1
-            
             ai_text = ai_response.text.strip() if ai_response else ""
             lines = [line for line in ai_text.split('\n') if line.strip()]
             
@@ -184,11 +186,11 @@ def summarize_pdfs(pdf_list):
                 catchy_title = lines[0].replace('1行目:', '').replace('*', '').strip()
                 summary_text = '\n'.join(lines[1:]).replace('2行目以降:', '').strip()
             else:
-                catchy_title = "要約のフォーマットエラー→"
+                catchy_title = item.get("title", "決算短信")
                 summary_text = ai_text
 
             news_data.append({
-                "date": today.strftime('%Y-%m-%d'),
+                "date": formatted_date, # 正しい日付で保存
                 "code": item["code"],
                 "title": catchy_title,
                 "summary": summary_text,
@@ -197,35 +199,34 @@ def summarize_pdfs(pdf_list):
             print(f"＞ [{item['code']}] ✨要約完了！")
             time.sleep(2)
             
-        except requests.exceptions.Timeout:
-            print(f"＞ ❌エラー ({item['code']}): TDnetの応答がありません（タイムアウト）")
         except Exception as e:
             print(f"＞ ❌エラー ({item['code']}): {e}")
             
     return news_data
 
 # ==========================================
-# 4. メイン処理 (過去ニュースの維持 + 重複スキップ + マージ)
+# 4. メイン処理 (過去ニュースの維持 + 安全な重複チェック)
 # ==========================================
 if __name__ == "__main__":
     pdfs_to_process = get_tdnet_pdfs(todays_codes)
     
-    # ① 既存のニュースを読み込む（90日前まで保持）
+    # ① 既存ニュースの読み込み（安全ガード付き）
     existing_news = []
     if os.path.exists("ai_news.json"):
         with open("ai_news.json", "r", encoding="utf-8") as f:
-            try: existing_news = json.load(f)
+            try: 
+                raw_json = json.load(f)
+                if isinstance(raw_json, list):
+                    existing_news = raw_json
             except: pass
 
     limit_date = (today - datetime.timedelta(days=99)).strftime('%Y-%m-%d')
-    existing_news = [n for n in existing_news if n['date'] >= limit_date]
+    # .get() を使用して KeyError を完全防止
+    existing_news = [n for n in existing_news if isinstance(n, dict) and n.get('date', '') >= limit_date]
 
-    # ② 今日すでに処理済みの銘柄コードをリストアップ（同日の二重取得防止）
-    today_str_json = today.strftime('%Y-%m-%d')
-    processed_codes_today = {n['code'] for n in existing_news if n['date'] == today_str_json}
-    
-    # ③ まだ処理していない新しいPDFだけを抽出
-    unprocessed_pdfs = [p for p in pdfs_to_process if p['code'] not in processed_codes_today]
+    # ② 処理済みURLの抽出 (.get() で安全取得)
+    processed_urls_today = {n.get('url') or n.get('pdf_url', '') for n in existing_news}
+    unprocessed_pdfs = [p for p in pdfs_to_process if p.get('pdf_url') not in processed_urls_today]
     
     print(f"本日発見されたPDF: {len(pdfs_to_process)}件")
     print(f"すでに処理済みでスキップ: {len(pdfs_to_process) - len(unprocessed_pdfs)}件")
@@ -233,20 +234,23 @@ if __name__ == "__main__":
 
     new_news = []
     if unprocessed_pdfs:
-        new_news = summarize_pdfs(unprocessed_pdfs)
+        # 今日の日付指定文字列を渡す
+        new_news = summarize_pdfs(unprocessed_pdfs, today_str_tdnet)
         
-    # ④ 既存データと新規データを合体させる（過去の1Q・2Qも残るようURLで重複排除）
+    # ③ 結合とURL重複の排除（安全ガード付き）
     combined_news = new_news + existing_news
     
     final_news = []
     seen_urls = set()
     for n in combined_news:
-        if n['url'] not in seen_urls:
-            final_news.append(n)
-            seen_urls.add(n['url'])
+        if isinstance(n, dict):
+            url = n.get('url') or n.get('pdf_url', '')
+            if url and url not in seen_urls:
+                final_news.append(n)
+                seen_urls.add(url)
             
-    # 日付の降順（新しい順）で安定ソート
-    final_news.sort(key=lambda x: x['date'], reverse=True)
+    # 日付順ソート（エラー回避の安全フォールバック付き）
+    final_news.sort(key=lambda x: x.get('date', ''), reverse=True)
     
     with open("ai_news.json", "w", encoding="utf-8") as f:
         json.dump(final_news, f, ensure_ascii=False, indent=2)
