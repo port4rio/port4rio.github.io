@@ -73,14 +73,17 @@ except Exception as e:
 # ==========================================
 # ★一時的な手動レスキュー設定（終わったら消す）
 # ==========================================
-#todays_codes = ["6327", "7532"]
-#today_str_tdnet = "20260818"  # ← ここを「実際の決算発表日」の数字8桁に書き換えて
+todays_codes = ["3856", "9999"]
+today_str_tdnet = "20260819"  # ← ここを「実際の決算発表日」の数字8桁に書き換えて
 
 # ==========================================
-# 2. TDnetから「全」決算短信PDFを抽出 (英数混在・REIT除外対応)
+# 2. TDnetから対象銘柄のPDFURLを抽出
 # ==========================================
-def get_tdnet_pdfs():
-    print("TDnetの本日分ページを全件巡回中...")
+def get_tdnet_pdfs(target_codes):
+    if not target_codes:
+        return []
+        
+    print("TDnetの本日分ページを巡回中...")
     base_url = "https://www.release.tdnet.info/inbs/"
     found_pdfs = []
     
@@ -101,32 +104,25 @@ def get_tdnet_pdfs():
                 
             for tr in trs:
                 row_text = tr.get_text()
+                matched_code = next((c for c in target_codes if c in row_text), None)
                 
-                # ▼ 英数混在(285A等)に対応し、TDnet特有の末尾「0」を除外して4桁コードのみ抽出
-                code_match = re.search(r'\b([1-9][0-9A-Z]{3})0?\b', row_text)
+                # ▼ 弾きたいノイズのリストを定義
+                exclude_words = ["訂正", "レビュー", "補足", "お知らせ"]
                 
-                # ▼ ノイズ・REIT・投資信託を安全に除外するワードリスト
-                # （※「コンクリート」等を誤排除しないよう、「投資法人」「REIT」等で判定）
-                exclude_words = [
-                    "訂正", "レビュー", "補足", "お知らせ", 
-                    "投資法人", "REIT", "投信", "投資信託", "インフラファンド"
-                ]
-                
-                if code_match and "決算短信" in row_text and not any(word in row_text for word in exclude_words):
-                    matched_code = code_match.group(1) # 末尾の0を除いた4桁（例: 285A, 7203）が取得される
+                # ▼ 「決算短信」が含まれ、かつ除外リストの言葉が1つも入っていない場合のみ処理
+                if matched_code and "決算短信" in row_text and not any(word in row_text for word in exclude_words):
                     pdf_link = tr.find('a', href=re.compile(r'\.pdf$'))
                     if pdf_link:
-                        pdf_title = pdf_link.get_text(strip=True) or "決算短信"
                         found_pdfs.append({
                             "code": matched_code,
-                            "raw_title": pdf_title,
+                            "title": pdf_link.get_text(strip=True) or "決算短信",
                             "pdf_url": base_url + pdf_link['href']
                         })
             print(f" - ページ {page_str} をチェック完了")
         except:
             break
             
-    print(f"合計 {len(found_pdfs)} 件の決算短信PDFを発見しました。")
+    print(f"合計 {len(found_pdfs)} 件の対象PDFを発見しました。")
     return found_pdfs
 
 # ==========================================
@@ -210,7 +206,7 @@ def summarize_pdfs(pdf_list):
 # 4. メイン処理 (過去ニュースの維持 + 重複スキップ + マージ)
 # ==========================================
 if __name__ == "__main__":
-    pdfs_to_process = get_tdnet_pdfs()
+    pdfs_to_process = get_tdnet_pdfs(todays_codes)
     
     # ① 既存のニュースを読み込む（90日前まで保持）
     existing_news = []
