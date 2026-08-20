@@ -1,7 +1,11 @@
 name: Run Bulk Fetch
 
 on:
-  workflow_dispatch: # Actionsタブから手動ボタンで実行できるようにする設定
+  workflow_dispatch:
+
+# ▼ 追記：GitHub Actions にファイルの上書き保存（Push）を許可する
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -24,7 +28,7 @@ jobs:
         run: python3 bulk_fetch.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SECRET_PROMPT: ${{ secrets.SECRET_PROMPT }}
+          SECRET_PROMPT: ${{ secrets.SECRET_PROMPT }} # ← 秘伝のプロンプトもセット
 
       - name: Commit and push if changed
         run: |
