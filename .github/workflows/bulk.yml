@@ -24,6 +24,7 @@ jobs:
         run: python3 bulk_fetch.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SECRET_PROMPT: ${{ secrets.SECRET_PROMPT }}
 
       - name: Commit and push if changed
         run: |
