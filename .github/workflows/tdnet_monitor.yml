@@ -32,8 +32,7 @@ jobs:
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         SECRET_PROMPT: ${{ secrets.SECRET_PROMPT }}
-      #run: python monitor.py
-      run: bulk_fetch.py
+      run: python monitor.py
 
     - name: ai_news.json をGitHubに保存
       run: |
