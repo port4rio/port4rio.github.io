@@ -75,7 +75,6 @@
   .tile-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
   .tile-label { color: #7f8c8d; font-size: 0.85em; }
   
-  /* 現在値は15px、前日比(dod-value)は13pxに保持 */
   .tile-value { font-weight: bold; font-size: 15px; }
   .tile-value.dod-value { font-size: 13px; }
   
@@ -259,6 +258,21 @@
   let lastNetworkRequestTime = 0;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
+  // ▼ XSS対策用のHTMLエスケープ関数 ▼
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(match) {
+      const escape = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return escape[match];
+    });
+  }
+
   function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.innerText = msg; toast.style.display = 'block';
@@ -281,7 +295,7 @@
         const d = meigaraDict[code];
         if (code.includes(query) || d.searchName.includes(query) || d.searchShortName.includes(query)) {
           const item = document.createElement('div');
-          item.className = 'suggest-item'; item.innerText = `${code} ${d.shortName}`;
+          item.className = 'suggest-item'; item.innerText = `${code} ${d.shortName}`; // innerTextは自動エスケープされるため安全
           item.onclick = function() { searchInput.value = `${code} ${d.shortName}`; suggestBox.style.display = 'none'; };
           suggestBox.appendChild(item); count++;
           if (count >= 100) break;
@@ -590,8 +604,8 @@
             pStr = (profJpy > 0 ? '+' : '') + Math.round(profJpy).toLocaleString() + '円';
             pClass = profJpy > 0 ? 'plus' : (profJpy < 0 ? 'minus' : '');
             
-            const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
-            if (valJpy > 0) pieData.push({ name: displayName, val: valJpy, color: color });
+            const pieName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
+            if (valJpy > 0) pieData.push({ name: pieName, val: valJpy, color: color });
         }
       }
 
@@ -601,7 +615,9 @@
         scheduleHtml = `<div class="schedule-info">${scheduleInfo.date}(${scheduleInfo.time})<br>発表予定</div>`;
       }
 
-      const displayName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
+      // ▼ エスケープ処理を適用してXSSを防ぐ ▼
+      const displayName = escapeHTML(stock.name || meigaraDict[stock.code]?.shortName || stock.code);
+      const displayCode = escapeHTML(stock.code);
 
       // ▼ 個別株用ChatGPTプロンプト構築 ▼
       let indPrompt = `この株の最新情報とチャートを分析し、今後6か月の戦略を立ててください。挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
@@ -630,7 +646,7 @@
         <div class="tile-header-2line">
           <div class="title-group-2line">
             <span class="tile-name-small">${displayName}</span>
-            <span class="tile-code-sub">${stock.code}</span>
+            <span class="tile-code-sub">${displayCode}</span>
           </div>
           ${scheduleHtml}
         </div>
@@ -656,9 +672,8 @@
             </div>
           </div>
           
-          <!-- ▼ 個別株用ChatGPTボタン ▼ -->
           <div style="margin-top: 10px; text-align: right;">
-            <a href="${indConsultUrl}" target="_blank" rel="noopener" style="display: inline-block; padding: 5px 12px; background: linear-gradient(135deg, #10A37F, #AB68FF); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">🍥 ChatGPTに相談</a>
+            <a href="${indConsultUrl}" target="_blank" rel="noopener" style="display: inline-block; padding: 5px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">🍥 ChatGPTに相談</a>
           </div>
         </div>`;
       grid.appendChild(tile);
@@ -683,7 +698,7 @@
       pieData.forEach(item => {
         let percent = (item.val / totalValue) * 100;
         gradientStr.push(`${item.color} ${cumulativePercent}% ${cumulativePercent + percent}%`);
-        tooltipLines.push(`${item.name}: ${Math.round(item.val).toLocaleString()}円 (${percent.toFixed(1)}%)`);
+        tooltipLines.push(`${escapeHTML(item.name)}: ${Math.round(item.val).toLocaleString()}円 (${percent.toFixed(1)}%)`);
         cumulativePercent += percent;
       });
       pieChart.style.background = `conic-gradient(${gradientStr.join(', ')})`;
@@ -696,7 +711,6 @@
     updateAISecretary(totalValue, totalProfit);
   }
 
-  // ▼ AI決算サマリー機能 ▼
   function toggleNewsSort() {
     isNewsSortOwned = !isNewsSortOwned;
     const btn = document.getElementById('ai-news-sort-btn');
@@ -766,25 +780,30 @@
       const item = allNewsData[i];
       const isOwned = portfolio.some(s => s.code === item.code);
       const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
-      const stockName = meigaraDict[item.code]?.shortName || item.code; 
-      const shortDate = item.date.substring(5).replace('-', '/');
+      
+      // ▼ エスケープ処理を適用 ▼
+      const stockName = escapeHTML(meigaraDict[item.code]?.shortName || item.code); 
+      const shortDate = escapeHTML(item.date.substring(5).replace('-', '/'));
       
       let arrowHtml = '';
-      let displayTitle = item.title;
+      let displayTitle = escapeHTML(item.title);
       const arrowMatch = item.title.match(/[👆👇⤴⤵→]/u);
       
       if (arrowMatch) {
         const arrow = arrowMatch[0];
-        displayTitle = item.title.replace(/[👆👇⤴⤵→]/gu, '').trim();
+        displayTitle = escapeHTML(item.title.replace(/[👆👇⤴⤵→]/gu, '').trim());
         if (arrow === '👆' || arrow === '👇') arrowHtml = `<span style="font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
         else if (arrow === '⤴') arrowHtml = `<span class="plus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
         else if (arrow === '⤵') arrowHtml = `<span class="minus" style="font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
         else if (arrow === '→') arrowHtml = `<span style="color: #64b5f6; font-weight: bold; font-size: 1.1em; margin-right: 4px;">${arrow}</span>`;
       }
 
+      const safeSummary = escapeHTML(item.summary);
+      const safeUrl = encodeURI(item.url);
+
       const summaryLines = item.summary.split('\n').filter(line => line.trim() !== '');
       const spicyReview = summaryLines.length > 3 ? summaryLines[3] : summaryLines[summaryLines.length - 1];
-      const fullText = `🤖 AI決算サマリー: ${stockName}(${item.code})\n【${displayTitle}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
+      const fullText = `🤖 AI決算サマリー: ${meigaraDict[item.code]?.shortName || item.code}(${item.code})\n【${item.title.replace(/[👆👇⤴⤵→]/gu, '').trim()}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
 
       const card = document.createElement('div'); card.className = 'ai-news-card';
       card.innerHTML = `
@@ -798,9 +817,9 @@
           </div>
         </div>
         <div class="ai-news-body">
-          <div class="ai-news-summary">${item.summary}</div>
+          <div class="ai-news-summary">${safeSummary}</div>
           <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <a href="${item.url}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
+            <a href="${safeUrl}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
             <div class="share-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
               <button class="share-toggle-btn ai-news-link" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: normal; font-size: 0.85em;">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
@@ -958,7 +977,7 @@
     } else {
       let earningsAlerts = [];
       portfolio.forEach(stock => {
-        if (upcomingSchedule[stock.code]) earningsAlerts.push(`<b>${stock.name || stock.code}</b> (${upcomingSchedule[stock.code].date})`);
+        if (upcomingSchedule[stock.code]) earningsAlerts.push(`<b>${escapeHTML(stock.name) || escapeHTML(stock.code)}</b> (${upcomingSchedule[stock.code].date})`);
       });
       if (earningsAlerts.length > 0) secretaryPages.push(`📅 <b>決算接近中！</b><br>${earningsAlerts.join('<br>')}<br>発表が控えてるよ！🤖`);
 
@@ -980,7 +999,7 @@
         top5.forEach(s => {
           const color = pColors[s.originalIndex % pColors.length];
           const percent = ((s.val / displayTotalVal) * 100).toFixed(1);
-          const name = s.name || meigaraDict[s.code]?.shortName || s.code;
+          const name = escapeHTML(s.name || meigaraDict[s.code]?.shortName || s.code);
           rankHtml += `<span style="color:${color};">●</span>${name} ${Math.floor(s.val).toLocaleString()}円 (${percent}%)<br>`;
         });
         secretaryPages.push(rankHtml);
