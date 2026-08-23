@@ -245,7 +245,9 @@
   let currentTypewriterId = 0;
   let secLastVal = 0;
   let secLastProf = 0;
-  let isNewsSortOwned = false; 
+  
+  // 0: 新着順, 1: 保有優先, 2: コア優先
+  let newsSortMode = 0; 
   let aiNewsState = 1; 
   let isFetchingPrices = false; 
   let isSecretaryClosed = false; 
@@ -254,11 +256,19 @@
   let currentNewsDisplayCount = 0;
   const NEWS_CHUNK_SIZE = 300;
   
+  // コア銘柄42選リスト
+  const coreStockCodes = [
+    "7203", "8306", "9984", "285A", "6857", "8035", "8316", "6501", "6098", "9983",
+    "6758", "8411", "6861", "8058", "8001", "9432", "9766", "8031", "2914", "6981",
+    "7011", "4063", "6503", "4519", "9433", "7182", "9434", "7974", "6752", "5803",
+    "8591", "6301", "7751", "6954", "4661", "4062", "2802", "9020", "8267", "6594",
+    "1928", "6506"
+  ];
+  
   const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   let lastNetworkRequestTime = 0;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
-  // ▼ XSS対策用のHTMLエスケープ関数 ▼
   function escapeHTML(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, function(match) {
@@ -295,7 +305,7 @@
         const d = meigaraDict[code];
         if (code.includes(query) || d.searchName.includes(query) || d.searchShortName.includes(query)) {
           const item = document.createElement('div');
-          item.className = 'suggest-item'; item.innerText = `${code} ${d.shortName}`; // innerTextは自動エスケープされるため安全
+          item.className = 'suggest-item'; item.innerText = `${code} ${d.shortName}`;
           item.onclick = function() { searchInput.value = `${code} ${d.shortName}`; suggestBox.style.display = 'none'; };
           suggestBox.appendChild(item); count++;
           if (count >= 100) break;
@@ -615,11 +625,9 @@
         scheduleHtml = `<div class="schedule-info">${scheduleInfo.date}(${scheduleInfo.time})<br>発表予定</div>`;
       }
 
-      // ▼ エスケープ処理を適用してXSSを防ぐ ▼
       const displayName = escapeHTML(stock.name || meigaraDict[stock.code]?.shortName || stock.code);
       const displayCode = escapeHTML(stock.code);
 
-      // ▼ 個別株用ChatGPTプロンプト構築 ▼
       let indPrompt = `この株の最新情報とチャートを分析し、今後6か月の戦略を立ててください。挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n`;
       const cPriceVal = (stockData && stockData.price !== null) ? stockData.price : null;
       
@@ -711,10 +719,14 @@
     updateAISecretary(totalValue, totalProfit);
   }
 
+  // ▼ AI決算サマリー：ソートモードのトグル（新着順 ➔ 保有優先 ➔ コア優先） ▼
   function toggleNewsSort() {
-    isNewsSortOwned = !isNewsSortOwned;
+    newsSortMode = (newsSortMode + 1) % 3;
     const btn = document.getElementById('ai-news-sort-btn');
-    btn.innerText = isNewsSortOwned ? '保有優先' : '⇅新着順';
+    if (newsSortMode === 0) btn.innerText = '⇅新着順';
+    else if (newsSortMode === 1) btn.innerText = '保有優先';
+    else if (newsSortMode === 2) btn.innerText = 'コア優先';
+    
     currentNewsDisplayCount = NEWS_CHUNK_SIZE; 
     sortAndRenderNews(true); 
   }
@@ -725,7 +737,7 @@
     aiNewsState = (aiNewsState + 1) % 3;
     
     if (aiNewsState === 0) {
-      list.style.display = 'none'; toggle.innerText = '▼ 開く';
+      list.style.display = 'none'; toggle.innerText = '▼開く';
     } else if (aiNewsState === 1) {
       list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広げる';
     } else {
@@ -757,7 +769,8 @@
     const list = document.getElementById('ai-news-list');
     if (isReset) {
       list.innerHTML = '';
-      if (isNewsSortOwned) {
+      if (newsSortMode === 1) {
+        // 保有優先
         allNewsData.sort((a, b) => {
           const aOwned = portfolio.some(s => s.code === a.code);
           const bOwned = portfolio.some(s => s.code === b.code);
@@ -765,7 +778,17 @@
           if (!aOwned && bOwned) return 1;
           return a.originalIndex - b.originalIndex;
         });
+      } else if (newsSortMode === 2) {
+        // コア優先
+        allNewsData.sort((a, b) => {
+          const aCore = coreStockCodes.includes(a.code);
+          const bCore = coreStockCodes.includes(b.code);
+          if (aCore && !bCore) return -1;
+          if (!aCore && bCore) return 1;
+          return a.originalIndex - b.originalIndex;
+        });
       } else {
+        // 新着順
         allNewsData.sort((a, b) => a.originalIndex - b.originalIndex);
       }
     }
@@ -781,7 +804,6 @@
       const isOwned = portfolio.some(s => s.code === item.code);
       const badgeHtml = isOwned ? '<span class="badge-owned" style="margin-right: 4px;">保有</span>' : '';
       
-      // ▼ エスケープ処理を適用 ▼
       const stockName = escapeHTML(meigaraDict[item.code]?.shortName || item.code); 
       const shortDate = escapeHTML(item.date.substring(5).replace('-', '/'));
       
@@ -822,7 +844,7 @@
             <a href="${safeUrl}" target="_blank" class="ai-news-link" style="margin-top: 0;">📄 元のPDFを開く</a>
             <div class="share-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
               <button class="share-toggle-btn ai-news-link" style="margin-top: 0; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: normal; font-size: 0.85em;">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92z"/></svg>
                 <span>シェア</span>
               </button>
               <div class="share-icons" style="display: none; gap: 6px; align-items: center; font-size: 0.75em; font-weight: bold;">
