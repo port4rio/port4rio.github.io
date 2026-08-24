@@ -256,7 +256,6 @@
   let currentNewsDisplayCount = 0;
   const NEWS_CHUNK_SIZE = 300;
   
-  // コア銘柄42選リスト
   const coreStockCodes = [
     "7203", "8306", "9984", "285A", "6857", "8035", "8316", "6501", "6098", "9983",
     "6758", "8411", "6861", "8058", "8001", "9432", "9766", "8031", "2914", "6981",
@@ -339,6 +338,7 @@
     } catch (e) {}
   }
 
+  // ▼ 高速タイムアウト（3.5秒）＆フォールバック付き株価取得 ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -350,33 +350,53 @@
     }
     
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&t=${Date.now()}`;
-    const proxies = [ url => `https://corsproxy.io/?${encodeURIComponent(url)}`, url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` ];
+    const proxies = [
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      url => `https://thingproxy.freeboard.io/fetch/${url}`
+    ];
     
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed));
+        if (elapsed < 200) await new Promise(r => setTimeout(r, 200 - elapsed));
         lastNetworkRequestTime = Date.now();
-        const res = await fetch(getProxyUrl(targetUrl));
+
+        // 3.5秒で打ち切るAbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch(getProxyUrl(targetUrl), { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (!res.ok) continue;
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
-        const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
-        let prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose);
+        const quotes = data.chart.result[0].indicators?.quote?.[0]?.close || [];
+        const validCloses = quotes.filter(v => v !== null && v !== undefined);
+        
+        let currentPrice = meta.regularMarketPrice;
+        if (currentPrice === undefined || currentPrice === null || currentPrice === 0) {
+          if (validCloses.length > 0) currentPrice = validCloses[validCloses.length - 1];
+        }
+
+        let prevClose = validCloses.length >= 2 ? validCloses[validCloses.length - 2] : (meta.previousClose || meta.chartPreviousClose);
         
         let changeAmount = null, changePercent = null;
-        if (meta.regularMarketPrice !== undefined && prevClose) {
-          changeAmount = Math.round((meta.regularMarketPrice - prevClose) * 100) / 100;
+        if (currentPrice !== undefined && currentPrice !== null && prevClose) {
+          changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
           changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
         }
         
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-        const priceResult = { price: meta.regularMarketPrice, change_amount: changeAmount, change_percent: changePercent, isUs: isUs, fetchTime: timeStr };
+        const priceResult = { price: currentPrice, change_amount: changeAmount, change_percent: changePercent, isUs: isUs, fetchTime: timeStr };
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
         return priceResult;
-      } catch (e) {}
+      } catch (e) {
+        continue;
+      }
     }
     if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
     return null;
@@ -719,7 +739,6 @@
     updateAISecretary(totalValue, totalProfit);
   }
 
-  // ▼ AI決算サマリー：ソートモードのトグル（新着順 ➔ 保有優先 ➔ コア優先） ▼
   function toggleNewsSort() {
     newsSortMode = (newsSortMode + 1) % 3;
     const btn = document.getElementById('ai-news-sort-btn');
@@ -770,7 +789,6 @@
     if (isReset) {
       list.innerHTML = '';
       if (newsSortMode === 1) {
-        // 保有優先
         allNewsData.sort((a, b) => {
           const aOwned = portfolio.some(s => s.code === a.code);
           const bOwned = portfolio.some(s => s.code === b.code);
@@ -779,7 +797,6 @@
           return a.originalIndex - b.originalIndex;
         });
       } else if (newsSortMode === 2) {
-        // コア優先
         allNewsData.sort((a, b) => {
           const aCore = coreStockCodes.includes(a.code);
           const bCore = coreStockCodes.includes(b.code);
@@ -788,7 +805,6 @@
           return a.originalIndex - b.originalIndex;
         });
       } else {
-        // 新着順
         allNewsData.sort((a, b) => a.originalIndex - b.originalIndex);
       }
     }
