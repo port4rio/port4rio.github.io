@@ -256,6 +256,7 @@
   let currentNewsDisplayCount = 0;
   const NEWS_CHUNK_SIZE = 300;
   
+  // コア銘柄42選リスト
   const coreStockCodes = [
     "7203", "8306", "9984", "285A", "6857", "8035", "8316", "6501", "6098", "9983",
     "6758", "8411", "6861", "8058", "8001", "9432", "9766", "8031", "2914", "6981",
@@ -264,8 +265,7 @@
     "1928", "6506"
   ];
   
-  const CACHE_EXPIRE_MS = 3 * 60 * 1000; // 3分間キャッシュ
-  let lastNetworkRequestTime = 0;
+  const CACHE_EXPIRE_MS = 5 * 60 * 1000;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
   function escapeHTML(str) {
@@ -338,7 +338,6 @@
     } catch (e) {}
   }
 
-  // ▼ 強力なキャッシュ無効化＆データ鮮度判定付き株価取得 ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -349,57 +348,47 @@
       try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
     
-    // プロキシのキャッシュを100%回避するユニークハッシュ
-    const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
-    
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&t=${Date.now()}`;
     const proxies = [
-      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
       url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
       url => `https://thingproxy.freeboard.io/fetch/${url}`
     ];
     
     for (let getProxyUrl of proxies) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5秒でタイムアウト
+
       try {
-        const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 150) await new Promise(r => setTimeout(r, 150 - elapsed));
-        lastNetworkRequestTime = Date.now();
-
-        // 2.5秒で即切替
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-
         const res = await fetch(getProxyUrl(targetUrl), { signal: controller.signal });
         clearTimeout(timeoutId);
-
         if (!res.ok) continue;
+
         const data = await res.json();
-        const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
-        
-        // 【データ鮮度判定】取得したデータが古いプロキシキャッシュ（72時間以上古い）なら棄却
-        const marketTime = meta.regularMarketTime;
-        if (marketTime) {
-          const dataAgeHours = (Date.now() / 1000 - marketTime) / 3600;
-          if (dataAgeHours > 72 && forceRefresh) {
-            continue; // 古いキャッシュは破棄して次のプロキシにトライ
-          }
-        }
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta || meta.regularMarketPrice === undefined) continue;
 
-        const quotes = data.chart.result[0].indicators?.quote?.[0]?.close || [];
-        const validCloses = quotes.filter(v => v !== null && v !== undefined);
+        const currentPrice = meta.regularMarketPrice;
         
-        let currentPrice = meta.regularMarketPrice;
-        if (currentPrice === undefined || currentPrice === null || currentPrice === 0) {
-          if (validCloses.length > 0) currentPrice = validCloses[validCloses.length - 1];
+        // 正確な前日終値の取得（APIメタデータを優先使用）
+        let prevClose = meta.chartPreviousClose || meta.previousClose;
+        if (!prevClose) {
+          const closes = data.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v !== null) || [];
+          if (closes.length >= 2) prevClose = closes[closes.length - 2];
         }
-
-        let prevClose = validCloses.length >= 2 ? validCloses[validCloses.length - 2] : (meta.previousClose || meta.chartPreviousClose);
         
         let changeAmount = null, changePercent = null;
-        if (currentPrice !== undefined && currentPrice !== null && prevClose) {
-          changeAmount = Math.round((currentPrice - prevClose) * 100) / 100;
-          changePercent = Math.round((changeAmount / prevClose) * 10000) / 100;
+        if (prevClose) {
+          changeAmount = currentPrice - prevClose;
+          changePercent = (changeAmount / prevClose) * 100;
+
+          if (!isUs && /^[0-9A-Z]{4}$/.test(symbol)) {
+            changeAmount = Math.round(changeAmount);
+            changePercent = Math.round(changePercent * 100) / 100;
+          } else {
+            changeAmount = Math.round(changeAmount * 100) / 100;
+            changePercent = Math.round(changePercent * 100) / 100;
+          }
         }
         
         const now = new Date();
@@ -408,14 +397,15 @@
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
         return priceResult;
       } catch (e) {
-        continue;
+        clearTimeout(timeoutId);
       }
     }
+    
     if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
     return null;
   }
 
-  async function fetchMarketOverview() {
+  async function fetchMarketOverview(forceRefresh = false) {
     const symbols = [
       { key: 'usdjpy', sym: 'JPY=X' },
       { key: 'n225', sym: '^N225' },
@@ -424,25 +414,24 @@
       { key: 'oil', sym: 'CL=F' },
       { key: 'btc', sym: 'BTC-USD' }
     ];
-    for (let item of symbols) {
-      const data = await fetchOnlinePrice(item.sym, false);
+    await Promise.all(symbols.map(async item => {
+      const data = await fetchOnlinePrice(item.sym, forceRefresh);
       if (data) marketIndices[item.key] = data;
-    }
+    }));
   }
 
   async function refreshAllPrices(forceRefresh = false) {
     if (forceRefresh) showToast("株価を更新中...");
     isFetchingPrices = true; 
     
-    fetchMarketOverview().then(() => {
-      renderTiles();
-    });
+    // 市況インデックスと保有ポートフォリオを一括で並列取得
+    const marketTask = fetchMarketOverview(forceRefresh);
+    const portfolioTask = Promise.all(portfolio.map(async item => {
+      const data = await fetchOnlinePrice(item.code, forceRefresh);
+      if (data) currentPrices[item.code] = data;
+    }));
 
-    for (let i = 0; i < portfolio.length; i++) {
-      const data = await fetchOnlinePrice(portfolio[i].code, forceRefresh);
-      if (data) currentPrices[portfolio[i].code] = data;
-      renderTiles();
-    }
+    await Promise.all([marketTask, portfolioTask]);
     
     isFetchingPrices = false; 
     if (forceRefresh) showToast("完了しました");
@@ -752,6 +741,7 @@
     updateAISecretary(totalValue, totalProfit);
   }
 
+  // ▼ AI決算サマリー：ソートモードのトグル（新着順 ➔ 保有優先 ➔ コア優先） ▼
   function toggleNewsSort() {
     newsSortMode = (newsSortMode + 1) % 3;
     const btn = document.getElementById('ai-news-sort-btn');
