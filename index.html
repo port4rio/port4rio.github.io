@@ -263,7 +263,7 @@
     "1928", "6506"
   ];
   
-  const CACHE_EXPIRE_MS = 3 * 60 * 1000; // キャッシュ有効期間を3分に短縮
+  const CACHE_EXPIRE_MS = 3 * 60 * 1000;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
   function escapeHTML(str) {
@@ -349,39 +349,56 @@
       } catch (e) {}
     }
     
-    // range=1moに拡大（週末・連休のデータ不足による8/21固まりを回避）
-    // query2を使用し、プロキシブロック回避のキャッシュバスターパラメータを付与
-    const baseUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=1mo&_t=${Date.now()}`;
+    const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=1mo&_t=${Date.now()}`;
     
-    const proxies = [
-      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    // 多彩なプロキシ取得方式（JSONラッピング型と直接レスポンス型を併用）
+    const fetchers = [
+      // 1. AllOrigins (JSONラッピング方式: Yahooからのアクセス制限を完全に回避)
+      async (url, signal) => {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal });
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.contents ? JSON.parse(json.contents) : null;
+      },
+      // 2. Corsproxy.io
+      async (url, signal) => {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal });
+        if (!res.ok) return null;
+        return await res.json();
+      },
+      // 3. Corsproxy.org
+      async (url, signal) => {
+        const res = await fetch(`https://corsproxy.org/?${encodeURIComponent(url)}`, { signal });
+        if (!res.ok) return null;
+        return await res.json();
+      },
+      // 4. Thingproxy
+      async (url, signal) => {
+        const res = await fetch(`https://thingproxy.freeboard.io/fetch/${url}`, { signal });
+        if (!res.ok) return null;
+        return await res.json();
+      }
     ];
-    
-    for (let getProxyUrl of proxies) {
+
+    for (let fetcher of fetchers) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
 
       try {
-        const res = await fetch(getProxyUrl(baseUrl), { signal: controller.signal });
+        const data = await fetcher(baseUrl, controller.signal);
         clearTimeout(timeoutId);
-        if (!res.ok) continue;
+        if (!data) continue;
 
-        const data = await res.json();
         const result = data?.chart?.result?.[0];
         const meta = result?.meta;
         if (!meta) continue;
 
         const quotes = result?.indicators?.quote?.[0]?.close || [];
-        // 有効な数値のみを抽出
         const validCloses = quotes.filter(v => v !== null && v !== undefined && !isNaN(v));
         if (validCloses.length === 0) continue;
 
-        // 最新の株価を取得（meta優先、無ければ有効配列の最新値）
         const currentPrice = meta.regularMarketPrice !== undefined ? meta.regularMarketPrice : validCloses[validCloses.length - 1];
 
-        // 前日終値の動的算出（最新株価が配列末尾と同じ場合は1つ前を参照）
         let prevClose = null;
         if (validCloses.length >= 2) {
           if (Math.abs(currentPrice - validCloses[validCloses.length - 1]) < 0.0001) {
@@ -414,7 +431,8 @@
           change_amount: changeAmount, 
           change_percent: changePercent, 
           isUs: isUs, 
-          fetchTime: timeStr 
+          fetchTime: timeStr,
+          error: false
         };
         
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: priceResult }));
@@ -424,9 +442,11 @@
       }
     }
     
-    // プロキシが全滅した場合のみ古いキャッシュをフォールバック使用
-    if (cachedData) try { return JSON.parse(cachedData).data; } catch (e) {}
-    return null;
+    // 強制更新時でなく、通信失敗時のみ古いキャッシュがあれば表示
+    if (!forceRefresh && cachedData) {
+      try { return JSON.parse(cachedData).data; } catch (e) {}
+    }
+    return { price: null, change_amount: null, change_percent: null, isUs: isUs, error: true };
   }
 
   async function fetchMarketOverview(forceRefresh = false) {
@@ -440,12 +460,12 @@
     ];
     await Promise.all(symbols.map(async item => {
       const data = await fetchOnlinePrice(item.sym, forceRefresh);
-      if (data) marketIndices[item.key] = data;
+      if (data && !data.error) marketIndices[item.key] = data;
     }));
   }
 
   async function refreshAllPrices(forceRefresh = false) {
-    if (forceRefresh) showToast("株価を更新中...");
+    if (forceRefresh) showToast("株価を最新に更新中...");
     isFetchingPrices = true; 
     
     const marketTask = fetchMarketOverview(forceRefresh);
@@ -457,7 +477,7 @@
     await Promise.all([marketTask, portfolioTask]);
     
     isFetchingPrices = false; 
-    if (forceRefresh) showToast("完了しました");
+    if (forceRefresh) showToast("更新が完了しました");
     renderTiles();
   }
 
@@ -510,7 +530,10 @@
     localStorage.setItem('portfolio', JSON.stringify(portfolio));
     searchInput.value = ''; document.getElementById('shares').value = ''; document.getElementById('price').value = '';
     suggestBox.style.display = 'none'; showToast(`登録しました: ${code} ${name}`); renderTiles(); loadAINews();
-    const data = await fetchOnlinePrice(code, true); if (data) { currentPrices[code] = data; renderTiles(); }
+    
+    // 新規登録の株価を強制取得
+    const data = await fetchOnlinePrice(code, true); 
+    if (data) { currentPrices[code] = data; renderTiles(); }
   }
 
   function deleteStock(index, event) { 
@@ -632,35 +655,39 @@
       let cPrice = '取得中...', cStr = '-', vStr = '-', pStr = '-', pClass = '', cClass = '';
       const color = pColors[index % pColors.length];
 
-      if (stockData && stockData.price !== null) {
-        cPrice = `${unitSymbol}${stockData.price.toLocaleString()}`;
-        if (stockData.change_amount !== null) {
-            const sign = stockData.change_amount > 0 ? '+' : '';
-            cStr = `${sign}${stockData.change_amount.toLocaleString()} (${sign}${stockData.change_percent}%)`;
-            cClass = stockData.change_amount > 0 ? 'plus' : (stockData.change_amount < 0 ? 'minus' : '');
-        }
-        if (hasCost) {
-            const rawVal = stockData.price * stock.shares; 
-            const rawProf = (stockData.price - stock.price) * stock.shares;
-            
-            const valJpy = isUs ? (rawVal * usdRate) : rawVal;
-            const profJpy = isUs ? (rawProf * usdRate) : rawProf;
-            
-            totalValue += valJpy; totalProfit += profJpy;
-            
-            if (stockData.change_amount !== null) {
-                const dodJpy = (stockData.change_amount * stock.shares) * (isUs ? usdRate : 1);
-                const prevJpy = ((stockData.price - stockData.change_amount) * stock.shares) * (isUs ? usdRate : 1);
-                totalDodAmount += dodJpy;
-                totalPrevValue += prevJpy;
-            }
+      if (stockData) {
+        if (stockData.error) {
+          cPrice = '<span style="color:#e74c3c; font-size:12px;">取得失敗</span>';
+        } else if (stockData.price !== null) {
+          cPrice = `${unitSymbol}${stockData.price.toLocaleString()}`;
+          if (stockData.change_amount !== null) {
+              const sign = stockData.change_amount > 0 ? '+' : '';
+              cStr = `${sign}${stockData.change_amount.toLocaleString()} (${sign}${stockData.change_percent}%)`;
+              cClass = stockData.change_amount > 0 ? 'plus' : (stockData.change_amount < 0 ? 'minus' : '');
+          }
+          if (hasCost) {
+              const rawVal = stockData.price * stock.shares; 
+              const rawProf = (stockData.price - stock.price) * stock.shares;
+              
+              const valJpy = isUs ? (rawVal * usdRate) : rawVal;
+              const profJpy = isUs ? (rawProf * usdRate) : rawProf;
+              
+              totalValue += valJpy; totalProfit += profJpy;
+              
+              if (stockData.change_amount !== null) {
+                  const dodJpy = (stockData.change_amount * stock.shares) * (isUs ? usdRate : 1);
+                  const prevJpy = ((stockData.price - stockData.change_amount) * stock.shares) * (isUs ? usdRate : 1);
+                  totalDodAmount += dodJpy;
+                  totalPrevValue += prevJpy;
+              }
 
-            vStr = Math.round(valJpy).toLocaleString() + '円'; 
-            pStr = (profJpy > 0 ? '+' : '') + Math.round(profJpy).toLocaleString() + '円';
-            pClass = profJpy > 0 ? 'plus' : (profJpy < 0 ? 'minus' : '');
-            
-            const pieName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
-            if (valJpy > 0) pieData.push({ name: pieName, val: valJpy, color: color });
+              vStr = Math.round(valJpy).toLocaleString() + '円'; 
+              pStr = (profJpy > 0 ? '+' : '') + Math.round(profJpy).toLocaleString() + '円';
+              pClass = profJpy > 0 ? 'plus' : (profJpy < 0 ? 'minus' : '');
+              
+              const pieName = stock.name || meigaraDict[stock.code]?.shortName || stock.code;
+              if (valJpy > 0) pieData.push({ name: pieName, val: valJpy, color: color });
+          }
         }
       }
 
@@ -1121,7 +1148,7 @@
     renderTiles();
     loadAINews();
 
-    refreshAllPrices(true); // 起動時強制リフレッシュ
+    refreshAllPrices(true);
   }
 
   init();
