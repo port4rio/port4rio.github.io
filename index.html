@@ -264,7 +264,7 @@
     "1928", "6506"
   ];
   
-  const CACHE_EXPIRE_MS = 5 * 60 * 1000;
+  const CACHE_EXPIRE_MS = 3 * 60 * 1000; // 3分間キャッシュ
   let lastNetworkRequestTime = 0;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
@@ -338,7 +338,7 @@
     } catch (e) {}
   }
 
-  // ▼ 高速タイムアウト（3.5秒）＆フォールバック付き株価取得 ▼
+  // ▼ 強力なキャッシュ無効化＆データ鮮度判定付き株価取得 ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -349,22 +349,26 @@
       try { const parsed = JSON.parse(cachedData); if (Date.now() - parsed.timestamp < CACHE_EXPIRE_MS) return parsed.data; } catch (e) {}
     }
     
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&t=${Date.now()}`;
+    // プロキシのキャッシュを100%回避するユニークハッシュ
+    const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
+    
     const proxies = [
-      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
       url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
       url => `https://thingproxy.freeboard.io/fetch/${url}`
     ];
     
     for (let getProxyUrl of proxies) {
       try {
         const elapsed = Date.now() - lastNetworkRequestTime;
-        if (elapsed < 200) await new Promise(r => setTimeout(r, 200 - elapsed));
+        if (elapsed < 150) await new Promise(r => setTimeout(r, 150 - elapsed));
         lastNetworkRequestTime = Date.now();
 
-        // 3.5秒で打ち切るAbortController
+        // 2.5秒で即切替
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
 
         const res = await fetch(getProxyUrl(targetUrl), { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -373,6 +377,15 @@
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
+        // 【データ鮮度判定】取得したデータが古いプロキシキャッシュ（72時間以上古い）なら棄却
+        const marketTime = meta.regularMarketTime;
+        if (marketTime) {
+          const dataAgeHours = (Date.now() / 1000 - marketTime) / 3600;
+          if (dataAgeHours > 72 && forceRefresh) {
+            continue; // 古いキャッシュは破棄して次のプロキシにトライ
+          }
+        }
+
         const quotes = data.chart.result[0].indicators?.quote?.[0]?.close || [];
         const validCloses = quotes.filter(v => v !== null && v !== undefined);
         
