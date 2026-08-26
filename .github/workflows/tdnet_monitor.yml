@@ -3,9 +3,9 @@ name: AI Earnings Monitor
 on:
   schedule:
     # 1-5時間遅れる
-    - cron: '53 9 * * 1-5'
+    - cron: '48 9 * * 1-5'
       timezone: 'Asia/Tokyo'
-    - cron: '53 14 * * 1-5'
+    - cron: '18 15 * * 1-5'
       timezone: 'Asia/Tokyo'
   workflow_dispatch: # 手動実行用
 
