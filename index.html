@@ -338,7 +338,7 @@
     } catch (e) {}
   }
 
-  // ▼ 新プロキシ3種 ＆ 前日終値（meta）直接取得ロジック ▼
+// ▼ Preflightエラーを起こしにくいプロキシ構成 ＆ 堅牢取得ロジック ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -352,12 +352,20 @@
     const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
     
-    // ご指定のプロキシ3種へ乗り換え
-    const proxies = [
-      url => `https://thingproxy.freeboard.io/fetch/${url}`,
-      url => `https://everyorigin.vercel.app/api/proxy?url=${encodeURIComponent(url)}`,
-      url => `https://proxy.cors.sh/${url}`
-    ];
+    // 自作Cloudflare Workerがある場合は最優先（なければ空文字でOK）
+    const MY_WORKER_URL = ""; 
+
+    const proxies = [];
+    if (MY_WORKER_URL) {
+      proxies.push(url => `${MY_WORKER_URL}?url=${encodeURIComponent(url)}`);
+    }
+    
+    // OPTIONS拒否を回避しやすいプロキシ構成
+    proxies.push(
+      url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+      url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`
+    );
     
     for (let getProxyUrl of proxies) {
       try {
@@ -368,23 +376,21 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const res = await fetch(getProxyUrl(targetUrl), { 
-          signal: controller.signal,
-          headers: { 'x-cors-api-key': 'temp_b84339e1a90c5082cb75e533e6c0c27d' }
-        });
+        const res = await fetch(getProxyUrl(targetUrl), { signal: controller.signal });
         clearTimeout(timeoutId);
 
         if (!res.ok) continue;
-        let data = await res.json();
+        let rawJson = await res.json();
         
-        // everyorigin用（JSONがcontent文字列に包まれている場合の展開）
-        if (data && data.content && typeof data.content === 'string') {
-          try { data = JSON.parse(data.content); } catch(e) {}
+        // allorigins.win (/get) の場合は contents 内にJSON文字列が入る
+        let data = rawJson;
+        if (rawJson && rawJson.contents) {
+          try { data = typeof rawJson.contents === 'string' ? JSON.parse(rawJson.contents) : rawJson.contents; } catch(e) {}
         }
 
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
-        // 古すぎるプロキシキャッシュの破棄
+        // 72時間以上古いキャッシュデータの破棄
         const marketTime = meta.regularMarketTime;
         if (marketTime) {
           const dataAgeHours = (Date.now() / 1000 - marketTime) / 3600;
@@ -399,7 +405,7 @@
           if (validCloses.length > 0) currentPrice = validCloses[validCloses.length - 1];
         }
 
-        // ★改修：数日間の配列推測ではなく、Yahoo Financeのmetaから「前日終値」を素直に直接取得★
+        // 前日終値の直接取得
         let prevClose = meta.chartPreviousClose || meta.previousClose;
         if (!prevClose && validCloses.length >= 2) {
           prevClose = validCloses[validCloses.length - 2];
