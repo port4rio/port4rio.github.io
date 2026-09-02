@@ -338,7 +338,7 @@
     } catch (e) {}
   }
 
-// ▼ Preflightエラーを起こしにくいプロキシ構成 ＆ 堅牢取得ロジック ▼
+  // ▼ 前営業日終値（1営業日前）を正確に拾う株価取得ロジック ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -352,15 +352,13 @@
     const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
     
-    // 自作Cloudflare Workerがある場合は最優先（なければ空文字でOK）
-    const MY_WORKER_URL = "https://curly-scene-3b7b.ngsw7str.workers.dev/"; 
+    const MY_WORKER_URL = ""; 
 
     const proxies = [];
     if (MY_WORKER_URL) {
       proxies.push(url => `${MY_WORKER_URL}?url=${encodeURIComponent(url)}`);
     }
     
-    // OPTIONS拒否を回避しやすいプロキシ構成
     proxies.push(
       url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
       url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
@@ -382,7 +380,6 @@
         if (!res.ok) continue;
         let rawJson = await res.json();
         
-        // allorigins.win (/get) の場合は contents 内にJSON文字列が入る
         let data = rawJson;
         if (rawJson && rawJson.contents) {
           try { data = typeof rawJson.contents === 'string' ? JSON.parse(rawJson.contents) : rawJson.contents; } catch(e) {}
@@ -390,7 +387,6 @@
 
         const meta = data?.chart?.result?.[0]?.meta; if(!meta) continue;
         
-        // 72時間以上古いキャッシュデータの破棄
         const marketTime = meta.regularMarketTime;
         if (marketTime) {
           const dataAgeHours = (Date.now() / 1000 - marketTime) / 3600;
@@ -398,17 +394,19 @@
         }
 
         const quotes = data.chart.result[0].indicators?.quote?.[0]?.close || [];
-        const validCloses = quotes.filter(v => v !== null && v !== undefined);
+        const validCloses = quotes.filter(v => v !== null && v !== undefined && v !== 0);
         
         let currentPrice = meta.regularMarketPrice;
         if (currentPrice === undefined || currentPrice === null || currentPrice === 0) {
           if (validCloses.length > 0) currentPrice = validCloses[validCloses.length - 1];
         }
 
-        // 前日終値の直接取得
-        let prevClose = meta.chartPreviousClose || meta.previousClose;
-        if (!prevClose && validCloses.length >= 2) {
+        // ★修正点：chartPreviousClose（5営業日前）を廃止し、配列の最後から2番目（前営業日）を取得★
+        let prevClose = null;
+        if (validCloses.length >= 2) {
           prevClose = validCloses[validCloses.length - 2];
+        } else if (meta.previousClose) {
+          prevClose = meta.previousClose;
         }
         
         let changeAmount = null, changePercent = null;
