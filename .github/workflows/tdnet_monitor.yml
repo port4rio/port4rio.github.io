@@ -3,7 +3,7 @@ name: AI Earnings Monitor
 on:
   schedule:
     # 1-5時間遅れる
-    - cron: '22 11 * * 1-5'
+    - cron: '07 10 * * 1-5'
       timezone: 'Asia/Tokyo'
     - cron: '22 16 * * 1-5'
       timezone: 'Asia/Tokyo'
