@@ -18,10 +18,11 @@
     background-color: #f4f6f9;
     color: #333;
     margin: 0;
-    padding: 15px;
+    padding: 5px 15px 15px; /* 上部余白を5pxに圧縮 */
     overflow-x: hidden;
   }
-  h1 { text-align: center; color: #2c3e50; font-size: 1.5em; }
+  h1 { text-align: center; color: #2c3e50; font-size: 1.5em; margin-top: 0; margin-bottom: 10px; }
+  .brand-4 { color: #1976d2; font-weight: bold; }
   
   /* ▼ AIニュース周りのCSS ▼ */
   .ai-news-container { background: linear-gradient(135deg, #f0f7ff, #e6f0fa); border-left: 5px solid #1976d2; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
@@ -117,6 +118,7 @@
   @media (prefers-color-scheme: dark) {
     body { background-color: #121212; color: #e0e0e0; color-scheme: dark; }
     h1, .tile-name-small, .ai-news-title, .footer-logo span { color: #ffffff !important; }
+    .brand-4 { color: #64b5f6 !important; }
     .input-card, .stock-tile, .summary-card, .ai-news-card, .suggest-box { background-color: #1e1e1e !important; box-shadow: 0 2px 8px rgba(255,255,255,0.02); }
     input[type="text"], input[type="number"], .calc-input, select { background-color: #2d2d2d; color: #fff; border-color: #444 !important; }
     .ai-news-container { background: linear-gradient(135deg, #1a2a3a, #111d27); border-left-color: #64b5f6; }
@@ -147,7 +149,7 @@
 </head>
 <body>
 
-<h1>📈 Port4rio</h1>
+<h1>📈 Port<span class="brand-4">4</span>rio</h1>
 <div id="toast"></div>
 
 <!-- ▼ AIニュースコンテナ ▼ -->
@@ -157,7 +159,7 @@
       ✨ AI決算サマリー
       <span id="ai-news-sort-btn" class="ai-news-toggle" onclick="toggleNewsSort()" style="margin-left: 8px;">⇅新着順</span>
     </span>
-    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼</span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼広げる</span>
   </h2>
   <div id="ai-news-list"></div>
 </div>
@@ -211,7 +213,7 @@
 </div>
 
 <div class="footer-logo">
-  <span onclick="window.scrollTo({top: 0, behavior: 'smooth'})">📈 Port4rio</span>
+  <span onclick="window.scrollTo({top: 0, behavior: 'smooth'})">📈 Port<span class="brand-4">4</span>rio</span>
 </div>
 
 <div class="disclaimer">
@@ -264,7 +266,7 @@
     "1928", "6506"
   ];
   
-  const CACHE_EXPIRE_MS = 3 * 60 * 1000; // 3分間キャッシュ
+  const CACHE_EXPIRE_MS = 3 * 60 * 1000;
   let lastNetworkRequestTime = 0;
   const pColors = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#17becf', '#bcbd22'];
 
@@ -338,7 +340,6 @@
     } catch (e) {}
   }
 
-  // ▼ 前営業日終値（1営業日前）を正確に拾う株価取得ロジック ▼
   async function fetchOnlinePrice(symbol, forceRefresh = false) {
     const isUs = /^[A-Za-z]+$/.test(symbol) && symbol !== 'JPY=X' && !symbol.startsWith('^');
     const targetSymbol = (isUs) ? symbol : ( /^[0-9A-Z]{4}$/.test(symbol) ? `${symbol}.T` : symbol );
@@ -352,7 +353,7 @@
     const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
     
-    const MY_WORKER_URL = "https://proxy.port4rio.workers.dev/"; 
+    const MY_WORKER_URL = ""; 
 
     const proxies = [];
     if (MY_WORKER_URL) {
@@ -401,7 +402,6 @@
           if (validCloses.length > 0) currentPrice = validCloses[validCloses.length - 1];
         }
 
-        // ★修正点：chartPreviousClose（5営業日前）を廃止し、配列の最後から2番目（前営業日）を取得★
         let prevClose = null;
         if (validCloses.length >= 2) {
           prevClose = validCloses[validCloses.length - 2];
