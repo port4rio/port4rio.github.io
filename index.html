@@ -353,7 +353,7 @@
     const nocache = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetSymbol}?interval=1d&range=5d&_nc=${nocache}`;
     
-    const MY_WORKER_URL = ""; 
+    const MY_WORKER_URL = "https://proxy.port4rio.workers.dev/"; 
 
     const proxies = [];
     if (MY_WORKER_URL) {
