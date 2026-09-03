@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import google.generativeai as genai
 
 # ==========================================
-# 0. APIと日本時間（JST）の設定
+# 0. APIと日本時間（JST）およびモデル優先度の設定
 # ==========================================
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
@@ -16,10 +16,17 @@ if not GEMINI_API_KEY:
     exit(1)
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-3.5-flash-lite')
+
+# 4段階のモデル優先度リスト
+MODEL_PRIORITY_LIST = [
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite'
+]
 
 JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
-today = datetime.datetime.now(JST) # 本番用（現在時刻）に戻しました
+today = datetime.datetime.now(JST)
 today_str_tdnet = today.strftime('%Y%m%d')
 today_patterns = [f"{today.month}/{today.day}", today.strftime('%m/%d')]
 print(f"【処理開始】日本時間: {today.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -34,7 +41,6 @@ schedule_data = {}
 todays_codes = []
 
 try:
-    # ▼ 1ページ目と2ページ目を順番に処理するためのループ
     for page in [1, 2]:
         target_url = f"https://www.traders.co.jp/market_jp/earnings_calendar/all/all_ex_etf/{page}"
         print(f" - {page}ページ目を取得中: {target_url}")
@@ -60,7 +66,6 @@ try:
                 if current_date in today_patterns:
                     todays_codes.append(code)
         
-        # ▼ 【超重要】相手サーバーへの負荷を下げるため、次のページにいく前に1秒待機
         time.sleep(1)
             
     todays_codes = list(set(todays_codes))
@@ -106,10 +111,8 @@ def get_tdnet_pdfs(target_codes):
                 row_text = tr.get_text()
                 matched_code = next((c for c in target_codes if c in row_text), None)
                 
-                # ▼ 弾きたいノイズのリストを定義
                 exclude_words = ["訂正", "レビュー", "補足", "お知らせ"]
                 
-                # ▼ 「決算短信」が含まれ、かつ除外リストの言葉が1つも入っていない場合のみ処理
                 if matched_code and "決算短信" in row_text and not any(word in row_text for word in exclude_words):
                     pdf_link = tr.find('a', href=re.compile(r'\.pdf$'))
                     if pdf_link:
@@ -126,14 +129,45 @@ def get_tdnet_pdfs(target_codes):
     return found_pdfs
 
 # ==========================================
-# 3. PDF抽出＆Geminiによる要約
+# 3. 4段階フォールバック付きGemini生成関数
 # ==========================================
+def generate_ai_summary(request_contents):
+    """
+    4段階の優先モデルリストに沿ってAI要約を試行。
+    レート制限やタイムアウト時は次順モデルへフォールバック。
+    """
+    for current_model_name in MODEL_PRIORITY_LIST:
+        print(f"  🤖 試行中モデル: [{current_model_name}]")
+        try:
+            active_model = genai.GenerativeModel(current_model_name)
+            for attempt in range(2):
+                try:
+                    response = active_model.generate_content(
+                        request_contents,
+                        request_options={"timeout": 180}
+                    )
+                    if response and response.text:
+                        return response.text.strip(), current_model_name
+                except Exception as e:
+                    err_msg = str(e)
+                    if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < 1:
+                        print(f"    ⚠️ 一時的な制限/タイムアウト。15秒待機後に再試行... ({attempt+1}/2)")
+                        time.sleep(15)
+                    else:
+                        raise e
+        except Exception as e:
+            print(f"    ⚠️ [{current_model_name}] での処理失敗: {e}")
+            if current_model_name != MODEL_PRIORITY_LIST[-1]:
+                print(f"    🔄 次の優先モデルにフォールバックします...")
+            continue
+            
+    return None, None
+
 def summarize_pdfs(pdf_list, target_date_str):
     news_data = []
     request_count = 0
     start_time = time.time()
     
-    # 手動レスキュー時の日付(YYYYMMDD)を YYYY-MM-DD に自動変換
     if len(target_date_str) == 8:
         formatted_date = f"{target_date_str[:4]}-{target_date_str[4:6]}-{target_date_str[6:]}"
     else:
@@ -161,25 +195,14 @@ def summarize_pdfs(pdf_list, target_date_str):
             base_prompt = os.environ.get("SECRET_PROMPT", "要約を作成してください。")
             request_contents = [base_prompt, doc_part]
 
-            max_retries = 3
-            ai_response = None
-            for attempt in range(max_retries):
-                try:
-                    ai_response = model.generate_content(
-                        request_contents,
-                        request_options={"timeout": 180} # 応答待ち最大3分
-                    )
-                    break 
-                except Exception as api_error:
-                    err_msg = str(api_error)
-                    if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < max_retries - 1:
-                        print(f"    ⚠️ 制限/タイムアウト検知。30秒待機して再試行... ({attempt+1}/{max_retries})")
-                        time.sleep(30)
-                    else:
-                        raise api_error
+            ai_text, used_model = generate_ai_summary(request_contents)
             
+            if not ai_text:
+                print(f"＞ ❌ [{item['code']}] 4モデルすべてで要約生成に失敗しました。")
+                continue
+
+            print(f"    └ 使用モデル: [{used_model}]")
             request_count += 1
-            ai_text = ai_response.text.strip() if ai_response else ""
             lines = [line for line in ai_text.split('\n') if line.strip()]
             
             if len(lines) >= 2:
@@ -190,7 +213,7 @@ def summarize_pdfs(pdf_list, target_date_str):
                 summary_text = ai_text
 
             news_data.append({
-                "date": formatted_date, # 正しい日付で保存
+                "date": formatted_date,
                 "code": item["code"],
                 "title": catchy_title,
                 "summary": summary_text,
@@ -210,7 +233,6 @@ def summarize_pdfs(pdf_list, target_date_str):
 if __name__ == "__main__":
     pdfs_to_process = get_tdnet_pdfs(todays_codes)
     
-    # ① 既存ニュースの読み込み（安全ガード付き）
     existing_news = []
     if os.path.exists("ai_news.json"):
         with open("ai_news.json", "r", encoding="utf-8") as f:
@@ -221,10 +243,8 @@ if __name__ == "__main__":
             except: pass
 
     limit_date = (today - datetime.timedelta(days=99)).strftime('%Y-%m-%d')
-    # .get() を使用して KeyError を完全防止
     existing_news = [n for n in existing_news if isinstance(n, dict) and n.get('date', '') >= limit_date]
 
-    # ② 処理済みURLの抽出 (.get() で安全取得)
     processed_urls_today = {n.get('url') or n.get('pdf_url', '') for n in existing_news}
     unprocessed_pdfs = [p for p in pdfs_to_process if p.get('pdf_url') not in processed_urls_today]
     
@@ -234,10 +254,8 @@ if __name__ == "__main__":
 
     new_news = []
     if unprocessed_pdfs:
-        # 今日の日付指定文字列を渡す
         new_news = summarize_pdfs(unprocessed_pdfs, today_str_tdnet)
         
-    # ③ 結合とURL重複の排除（安全ガード付き）
     combined_news = new_news + existing_news
     
     final_news = []
@@ -249,7 +267,6 @@ if __name__ == "__main__":
                 final_news.append(n)
                 seen_urls.add(url)
             
-    # 日付順ソート（エラー回避の安全フォールバック付き）
     final_news.sort(key=lambda x: x.get('date', ''), reverse=True)
     
     with open("ai_news.json", "w", encoding="utf-8") as f:
