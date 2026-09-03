@@ -157,7 +157,7 @@
       ✨ AI決算サマリー
       <span id="ai-news-sort-btn" class="ai-news-toggle" onclick="toggleNewsSort()" style="margin-left: 8px;">⇅新着順</span>
     </span>
-    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼広げる</span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼</span>
   </h2>
   <div id="ai-news-list"></div>
 </div>
@@ -786,7 +786,7 @@
     } else if (aiNewsState === 1) {
       list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広げる';
     } else {
-      list.style.display = 'block'; list.style.maxHeight = '65vh'; toggle.innerText = '▲閉じる';
+      list.style.display = 'block'; list.style.maxHeight = '80vh'; toggle.innerText = '▲閉じる';
     }
   }
 
