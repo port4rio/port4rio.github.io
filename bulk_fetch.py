@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import google.generativeai as genai
 
 # ==========================================
-# 0. APIと設定
+# 0. APIとモデル設定
 # ==========================================
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
@@ -16,25 +16,28 @@ if not GEMINI_API_KEY:
     exit(1)
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-3.5-flash-lite')
 
-# 画像に記載された主要27社の「発表日」と「銘柄コード」リスト
+# 第一優先モデルとフォールバックモデルの設定
+PRIMARY_MODEL = 'gemini-3.8-flash'
+FALLBACK_MODEL = 'gemini-3.7-flash'
+
+print(f"🤖 第一優先モデル: [{PRIMARY_MODEL}] で処理を開始します。")
+
+# 主要27社の「発表日」と「銘柄コード」リスト
 TARGET_SCHEDULE = [
-    {"date": "20260827", "codes": ["2590"]},                 # 予備
-    {"date": "20260828", "codes": ["4707", "6118"]},         # 予備
-    #{"date": "20260709", "codes": ["9983"]},                 # ファストリ
-    #{"date": "20260710", "codes": ["6506"]},                 # 安川電機
-    #{"date": "20260724", "codes": ["4519"]},                 # 中外製薬
-    #{"date": "20260727", "codes": ["7751"]},                 # キヤノン
-    #{"date": "20260729", "codes": ["6501", "6857", "6301"]}, # 日立, アドテスト, コマツ
-    #{"date": "20260730", "codes": ["8035", "2914", "4661"]}, # 東エレク, JT, OLC
-    #{"date": "20260731", "codes": ["6758", "285A"]},         # ソニー, キオクシア
-    #{"date": "20260803", "codes": ["8306", "8058", "7201"]}, # 三菱UFJ, 三菱商事, 日産自
-    #{"date": "20260804", "codes": ["7203", "6503", "7011"]}, # トヨタ, 三菱重(7011/6503両対応)
-    #{"date": "20260805", "codes": ["6941", "6994", "6363"]}, # 山一電機, 指月電機, 酉島製作所
-    #{"date": "20260806", "codes": ["9984", "9432", "7974", "2802", "1662"]}, # SBG, NTT, 任天堂, 味の素, 石油資源
-    #{"date": "20260807", "codes": ["6098"]},                 # リクルート
-    #{"date": "20260810", "codes": ["6785"]}                  # 鈴木
+    {"date": "20260709", "codes": ["9983"]},                 # ファストリ
+    {"date": "20260710", "codes": ["6506"]},                 # 安川電機
+    {"date": "20260724", "codes": ["4519"]},                 # 中外製薬
+    {"date": "20260727", "codes": ["7751"]},                 # キヤノン
+    {"date": "20260729", "codes": ["6501", "6857", "6301"]}, # 日立, アドテスト, コマツ
+    {"date": "20260730", "codes": ["8035", "2914", "4661"]}, # 東エレク, JT, OLC
+    {"date": "20260731", "codes": ["6758", "285A"]},         # ソニー, キオクシア
+    {"date": "20260803", "codes": ["8306", "8058", "7201"]}, # 三菱UFJ, 三菱商事, 日産自
+    {"date": "20260804", "codes": ["7203", "6503", "7011"]}, # トヨタ, 三菱重(7011/6503両対応)
+    {"date": "20260805", "codes": ["6941", "6994", "6363"]}, # 山一電機, 指月電機, 酉島製作所
+    {"date": "20260806", "codes": ["9984", "9432", "7974", "2802", "1662"]}, # SBG, NTT, 任天堂, 味の素, 石油資源
+    {"date": "20260807", "codes": ["6098"]},                 # リクルート
+    {"date": "20260810", "codes": ["6785"]}                  # 鈴木
 ]
 
 # ==========================================
@@ -83,7 +86,7 @@ def fetch_target_pdfs(date_str, target_codes):
     return found_pdfs
 
 # ==========================================
-# 1-B. Yahooファイナンスからの救済抽出（1ヶ月経過用）
+# 1-B. Yahooファイナンスからの救済抽出
 # ==========================================
 def fetch_pdf_from_yahoo(code, date_str):
     url = f"https://finance.yahoo.co.jp/quote/{code}.T/financials"
@@ -95,7 +98,6 @@ def fetch_pdf_from_yahoo(code, date_str):
         response.encoding = response.apparent_encoding
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # パターン1: リンク(aタグ)から「決算短信」を探す
         for a in soup.find_all('a', href=True):
             text = a.get_text(strip=True)
             if "決算短信" in text:
@@ -104,7 +106,6 @@ def fetch_pdf_from_yahoo(code, date_str):
                     href = "https://finance.yahoo.co.jp" + href
                 return {"code": code, "date_str": date_str, "title": text, "pdf_url": href}
 
-        # パターン2: HTML直書きのJSON等からリンクを探す(フォールバック)
         html_text = response.text
         matches = re.findall(r'\{[^}]*"title"\s*:\s*"([^"]*決算短信[^"]*)"\s*,\s*"url"\s*:\s*"([^"]+)"[^}]*\}', html_text)
         if matches:
@@ -125,15 +126,44 @@ def fetch_pdf_from_yahoo(code, date_str):
     return None
 
 # ==========================================
-# 2. PDFのGemini要約処理
+# 2. PDFのGemini要約処理（フォールバック付）
 # ==========================================
+def generate_ai_summary(request_contents):
+    """第一優先モデルで試行し、失敗した場合はフォールバックモデルを使用"""
+    models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
+    
+    for current_model_name in models_to_try:
+        try:
+            active_model = genai.GenerativeModel(current_model_name)
+            for attempt in range(2):
+                try:
+                    response = active_model.generate_content(
+                        request_contents,
+                        request_options={"timeout": 180}
+                    )
+                    if response and response.text:
+                        return response.text.strip(), current_model_name
+                except Exception as e:
+                    err_msg = str(e)
+                    if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < 1:
+                        print(f"    ⚠️ [{current_model_name}] 一時的制限/タイムアウト。20秒待機後にリトライ... ({attempt+1}/2)")
+                        time.sleep(20)
+                    else:
+                        raise e
+        except Exception as e:
+            print(f"    ⚠️ [{current_model_name}] での生成失敗: {e}")
+            if current_model_name != models_to_try[-1]:
+                print(f"    🔄 [{FALLBACK_MODEL}] にフォールバックして切り替えます...")
+            continue
+            
+    return None, None
+
 def summarize_single_pdf(item):
     d_raw = item['date_str']
     formatted_date = f"{d_raw[:4]}-{d_raw[4:6]}-{d_raw[6:]}"
     
     print(f"  └ [{item['code']}] PDFダウンロード＆AI要約中...")
     try:
-        # 弾かれないようUser-Agentを追加してダウンロード
         headers = {'User-Agent': 'Mozilla/5.0'}
         res = requests.get(item['pdf_url'], headers=headers, timeout=20)
         
@@ -142,28 +172,16 @@ def summarize_single_pdf(item):
             return None
 
         doc_part = {"mime_type": "application/pdf", "data": res.content}
-        
         base_prompt = os.environ.get("SECRET_PROMPT", "要約を作成してください。")
         request_contents = [base_prompt, doc_part]
 
-        for attempt in range(3):
-            try:
-                ai_response = model.generate_content(
-                    request_contents,
-                    request_options={"timeout": 180}
-                )
-                break
-            except Exception as e:
-                err_msg = str(e)
-                if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < 2:
-                    print(f"    ⚠️ 制限/タイムアウト検知。30秒待機して再試行... ({attempt+1}/3)")
-                    time.sleep(30)
-                else:
-                    raise e
-
-        ai_text = ai_response.text.strip() if ai_response else ""
-        lines = [l for l in ai_text.split('\n') if l.strip()]
+        ai_text, used_model = generate_ai_summary(request_contents)
         
+        if not ai_text:
+            print(f"  ❌ [{item['code']}] 全モデルで要約生成に失敗しました。")
+            return None
+
+        lines = [l for l in ai_text.split('\n') if l.strip()]
         if len(lines) >= 2:
             catchy_title = lines[0].replace('1行目:', '').replace('*', '').strip()
             summary_text = '\n'.join(lines[1:]).replace('2行目以降:', '').strip()
@@ -171,6 +189,7 @@ def summarize_single_pdf(item):
             catchy_title = item.get("title", "決算短信")
             summary_text = ai_text
 
+        print(f"  └ 使用モデル: [{used_model}]")
         return {
             "date": formatted_date,
             "code": item["code"],
@@ -192,15 +211,12 @@ if __name__ == "__main__":
         date_str = schedule["date"]
         target_codes = schedule["codes"]
         
-        # 1. まずTDnetを探す
         tdnet_pdfs = fetch_target_pdfs(date_str, target_codes)
         all_target_pdfs.extend(tdnet_pdfs)
         
-        # 2. TDnetで見つからなかった銘柄を特定（1ヶ月経過等）
         found_codes = {p['code'] for p in tdnet_pdfs}
         missing_codes = [c for c in target_codes if c not in found_codes]
         
-        # 3. Yahooファイナンスから救済取得
         for m_code in missing_codes:
             print(f"  ⚠️ TDnetで見つからないためYahooファイナンスを検索します... ({m_code})")
             yahoo_pdf = fetch_pdf_from_yahoo(m_code, date_str)
