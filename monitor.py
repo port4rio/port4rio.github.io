@@ -25,6 +25,9 @@ MODEL_PRIORITY_LIST = [
     'gemini-3.5-flash-lite'
 ]
 
+# 本日上限（429）に達したモデルを記憶するセット（当日の処理中で共有）
+EXHAUSTED_MODELS = set()
+
 JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
 today = datetime.datetime.now(JST)
 today_str_tdnet = today.strftime('%Y%m%d')
@@ -45,7 +48,7 @@ try:
         target_url = f"https://www.traders.co.jp/market_jp/earnings_calendar/all/all_ex_etf/{page}"
         print(f" - {page}ページ目を取得中: {target_url}")
         
-        response = requests.get(target_url, headers=headers, timeout=10)
+        response = requests.get(target_url, headers=headers, timeout=8)
         soup = BeautifulSoup(response.content, 'html.parser')
         
         current_date = None
@@ -82,22 +85,28 @@ except Exception as e:
 #today_str_tdnet = "20260827"  # ← ここを「実際の決算発表日」の数字8桁に書き換えて
 
 # ==========================================
-# 2. TDnetから対象銘柄のPDFURLを抽出
+# 2. TDnetから対象銘柄のPDFURLを抽出（高速化版）
 # ==========================================
 def get_tdnet_pdfs(target_codes):
     if not target_codes:
         return []
         
-    print("TDnetの本日分ページを巡回中...")
+    print(f"TDnetの本日分ページを巡回中... (対象銘柄数: {len(target_codes)}件)")
     base_url = "https://www.release.tdnet.info/inbs/"
     found_pdfs = []
     
     for page_num in range(1, 18):
+        # 本日の対象PDFが全て見つかったら即終了（不要なページ巡回をカット）
+        if len(found_pdfs) >= len(target_codes):
+            print(" ⚡ 全対象銘柄のPDFを発見したため、TDnet巡回を早期終了します。")
+            break
+
         page_str = str(page_num).zfill(3)
         tdnet_url = f"https://www.release.tdnet.info/inbs/I_list_{page_str}_{today_str_tdnet}.html"
         
         try:
-            response = requests.get(tdnet_url, timeout=10)
+            # タイムアウトを10秒→4秒に短縮して応答待ちを高速化
+            response = requests.get(tdnet_url, timeout=4)
             response.encoding = response.apparent_encoding
             if response.status_code != 200:
                 break
@@ -116,27 +125,35 @@ def get_tdnet_pdfs(target_codes):
                 if matched_code and "決算短信" in row_text and not any(word in row_text for word in exclude_words):
                     pdf_link = tr.find('a', href=re.compile(r'\.pdf$'))
                     if pdf_link:
-                        found_pdfs.append({
-                            "code": matched_code,
-                            "title": pdf_link.get_text(strip=True) or "決算短信",
-                            "pdf_url": base_url + pdf_link['href']
-                        })
-            print(f" - ページ {page_str} をチェック完了")
-        except:
+                        pdf_url = base_url + pdf_link['href']
+                        if not any(p['pdf_url'] == pdf_url for p in found_pdfs):
+                            found_pdfs.append({
+                                "code": matched_code,
+                                "title": pdf_link.get_text(strip=True) or "決算短信",
+                                "pdf_url": pdf_url
+                            })
+            print(f" - ページ {page_str} チェック完了 (累計発見: {len(found_pdfs)}件)")
+        except Exception:
+            # 存在しないページやタイムアウト発生時は即座に巡回終了
+            print(f" - ページ {page_str} なし（またはタイムアウト）。巡回を終了します。")
             break
             
     print(f"合計 {len(found_pdfs)} 件の対象PDFを発見しました。")
     return found_pdfs
 
 # ==========================================
-# 3. 4段階フォールバック付きGemini生成関数
+# 3. 高速フォールバック対応 Gemini生成関数
 # ==========================================
 def generate_ai_summary(request_contents):
     """
     4段階の優先モデルリストに沿ってAI要約を試行。
-    レート制限やタイムアウト時は次順モデルへフォールバック。
+    本日の上限(429)に達したモデルは即座にブラックリスト化し、0秒で次モデルへフォールバックします。
     """
     for current_model_name in MODEL_PRIORITY_LIST:
+        # すでに本日上限に達しているモデルは0秒スキップ
+        if current_model_name in EXHAUSTED_MODELS:
+            continue
+
         print(f"  🤖 試行中モデル: [{current_model_name}]")
         try:
             active_model = genai.GenerativeModel(current_model_name)
@@ -144,19 +161,28 @@ def generate_ai_summary(request_contents):
                 try:
                     response = active_model.generate_content(
                         request_contents,
-                        request_options={"timeout": 180}
+                        request_options={"timeout": 120} # タイムアウトも2分に短縮
                     )
                     if response and response.text:
                         return response.text.strip(), current_model_name
                 except Exception as e:
                     err_msg = str(e)
-                    if ("429" in err_msg or "504" in err_msg or "Deadline" in err_msg) and attempt < 1:
-                        print(f"    ⚠️ 一時的な制限/タイムアウト。15秒待機後に再試行... ({attempt+1}/2)")
-                        time.sleep(15)
+                    
+                    # ▼ 1日上限エラー(Quota exceeded / 429)を検知した場合
+                    if "429" in err_msg and ("quota" in err_msg.lower() or "limit: 20" in err_msg.lower()):
+                        print(f"    ⛔ [{current_model_name}] 本日の1日上限(20回)に達しました。本処理内では即スキップします。")
+                        EXHAUSTED_MODELS.add(current_model_name)
+                        break # リトライせず直ちに次のモデルへ切り替え
+                    
+                    # ▼ 一時的なサーバー混雑・タイムアウト(504)等の場合のみ1回リトライ
+                    if ("504" in err_msg or "Deadline" in err_msg or "429" in err_msg) and attempt < 1:
+                        print(f"    ⚠️ 一時的エラー。10秒待機後に再試行... ({attempt+1}/2)")
+                        time.sleep(10)
                     else:
                         raise e
         except Exception as e:
-            print(f"    ⚠️ [{current_model_name}] での処理失敗: {e}")
+            if current_model_name not in EXHAUSTED_MODELS:
+                print(f"    ⚠️ [{current_model_name}] での処理失敗: {e}")
             if current_model_name != MODEL_PRIORITY_LIST[-1]:
                 print(f"    🔄 次の優先モデルにフォールバックします...")
             continue
@@ -165,8 +191,6 @@ def generate_ai_summary(request_contents):
 
 def summarize_pdfs(pdf_list, target_date_str):
     news_data = []
-    request_count = 0
-    start_time = time.time()
     
     if len(target_date_str) == 8:
         formatted_date = f"{target_date_str[:4]}-{target_date_str[4:6]}-{target_date_str[6:]}"
@@ -176,17 +200,11 @@ def summarize_pdfs(pdf_list, target_date_str):
     for item in pdf_list:
         print(f"\n[{item['code']}] 処理開始 ({item.get('title', '決算短信')})...")
         try:
-            current_time = time.time()
-            if current_time - start_time > 60:
-                request_count = 0
-                start_time = time.time()
-                
-            if request_count >= 14:
-                time.sleep(60 - (current_time - start_time) + 1)
-                request_count = 0
-                start_time = time.time()
+            res = requests.get(item['pdf_url'], timeout=15)
+            if res.status_code != 200:
+                print(f"＞ ❌ [{item['code']}] PDF取得失敗")
+                continue
 
-            res = requests.get(item['pdf_url'], timeout=20)
             doc_part = {
                 "mime_type": "application/pdf",
                 "data": res.content
@@ -198,11 +216,10 @@ def summarize_pdfs(pdf_list, target_date_str):
             ai_text, used_model = generate_ai_summary(request_contents)
             
             if not ai_text:
-                print(f"＞ ❌ [{item['code']}] 4モデルすべてで要約生成に失敗しました。")
+                print(f"＞ ❌ [{item['code']}] 利用可能な全モデルで要約生成に失敗しました。")
                 continue
 
             print(f"    └ 使用モデル: [{used_model}]")
-            request_count += 1
             lines = [line for line in ai_text.split('\n') if line.strip()]
             
             if len(lines) >= 2:
@@ -220,7 +237,7 @@ def summarize_pdfs(pdf_list, target_date_str):
                 "url": item["pdf_url"]
             })
             print(f"＞ [{item['code']}] ✨要約完了！")
-            time.sleep(2)
+            time.sleep(1) # 間隔も1秒に短縮
             
         except Exception as e:
             print(f"＞ ❌エラー ({item['code']}): {e}")
