@@ -19,7 +19,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # 第一優先モデルとフォールバックモデルの設定
 PRIMARY_MODEL = 'gemini-3.8-flash'
-FALLBACK_MODEL = 'gemini-3.7-flash'
+FALLBACK_MODEL = 'gemini-3.5-flash-lite'
 
 print(f"🤖 第一優先モデル: [{PRIMARY_MODEL}] で処理を開始します。")
 
