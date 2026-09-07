@@ -982,18 +982,19 @@
     }
   }
 
-  // ▼ AI秘書（アニメーション・判定・表示） ▼
+  // ▼ AI秘書（判定・表示） ▼
   async function typeWriter(html, id) {
     const el = document.getElementById('ai-secretary-text'); if (!el) return;
-    el.innerHTML = ''; let i = 0, isTag = false, text = '';
+    if (currentTypewriterId !== id || isSecretaryClosed) return;
     
-    while (i < html.length) {
-      if (currentTypewriterId !== id || isSecretaryClosed) return; 
-      let char = html.charAt(i); text += char;
-      if (char === '<') isTag = true; if (char === '>') isTag = false;
-      el.innerHTML = text; i++;
-      if (!isTag && char !== '>') await new Promise(r => setTimeout(r, 20));
-    }
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.15s ease-in-out';
+    el.innerHTML = html;
+    
+    // 次フレームでフェードイン
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+    });
   }
 
   async function playSecretaryLoop(id) {
