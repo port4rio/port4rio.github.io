@@ -913,9 +913,22 @@
       const yfSymbol = isUsStock ? item.code : (/^[0-9A-Z]{4}$/.test(item.code) ? `${item.code}.T` : item.code);
       const yfUrl = `https://finance.yahoo.co.jp/quote/${yfSymbol}`;
 
-      const summaryLines = item.summary.split('\n').filter(line => line.trim() !== '');
-      const spicyReview = summaryLines.length > 3 ? summaryLines[3] : summaryLines[summaryLines.length - 1];
-      const fullText = `🤖 AI決算サマリー: ${meigaraDict[item.code]?.shortName || item.code}(${item.code})\n【${item.title.replace(/[👆👇⤴⤵→]/gu, '').trim()}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
+      // ▼ 【総評】部分の動的抽出（改行や書式ズレ対策） ▼
+      let spicyReview = '';
+      const totalIdx = item.summary.indexOf('【総評】');
+      if (totalIdx !== -1) {
+        const afterText = item.summary.substring(totalIdx + 4).trim();
+        const afterLines = afterText.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('【'));
+        if (afterLines.length > 0) spicyReview = afterLines[0];
+      }
+      if (!spicyReview) {
+        const allLines = item.summary.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('【'));
+        spicyReview = allLines.length > 0 ? allLines[0] : item.summary.substring(0, 60);
+      }
+
+      // ▼ SNSシェア用（短文）と Copyボタン用（要約本文の全文）の分離 ▼
+      const shareText = `🤖 AI決算サマリー: ${meigaraDict[item.code]?.shortName || item.code}(${item.code})\n【${item.title.replace(/[👆👇⤴⤵→]/gu, '').trim()}】\n\n💬 ${spicyReview}\n\n#Port4rio\nhttps://port4rio.github.io`;
+      const copyFullText = `🤖 AI決算サマリー: ${meigaraDict[item.code]?.shortName || item.code}(${item.code})\n【${item.title.replace(/[👆👇⤴⤵→]/gu, '').trim()}】\n\n${item.summary}\n\n#Port4rio\nhttps://port4rio.github.io`;
 
       const card = document.createElement('div'); card.className = 'ai-news-card';
       card.innerHTML = `
@@ -939,9 +952,9 @@
                 <span>シェア</span>
               </button>
               <div class="share-icons" style="display: none; gap: 6px; align-items: center; font-size: 0.75em; font-weight: bold;">
-                <a href="https://x.com/intent/tweet?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">𝕏</a>
-                <a href="https://line.me/R/msg/text/?${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: #00B900; border: 1px solid #00B900; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">LINE</a>
-                <a href="https://www.threads.net/intent/post?text=${encodeURIComponent(fullText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">Threads</a>
+                <a href="https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">𝕏</a>
+                <a href="https://line.me/R/msg/text/?${encodeURIComponent(shareText)}" target="_blank" style="text-decoration: none; color: #00B900; border: 1px solid #00B900; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">LINE</a>
+                <a href="https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}" target="_blank" style="text-decoration: none; color: inherit; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; line-height: 1.2; display: inline-block;">Threads</a>
                 <button class="copy-btn" style="background: none; border: 1px solid currentColor; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: inherit; font-weight: bold; color: inherit; line-height: 1.2; display: inline-block;">Copy</button>
               </div>
             </div>
@@ -961,7 +974,7 @@
       copyBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         try {
-          await navigator.clipboard.writeText(fullText);
+          await navigator.clipboard.writeText(copyFullText);
           showToast("全文をコピーしました！");
         } catch(err) {}
       });
@@ -982,18 +995,24 @@
     }
   }
 
-  // ▼ AI秘書（判定・表示） ▼
+  // ▼ AI秘書（滑らかなフェードイン・フェードアウト対応） ▼
   async function typeWriter(html, id) {
     const el = document.getElementById('ai-secretary-text'); if (!el) return;
     if (currentTypewriterId !== id || isSecretaryClosed) return;
     
-    el.style.opacity = '0';
+    // 1. まずフェードアウト
     el.style.transition = 'opacity 0.15s ease-in-out';
+    el.style.opacity = '0';
+    
+    await new Promise(r => setTimeout(r, 150));
+    if (currentTypewriterId !== id || isSecretaryClosed) return;
+    
+    // 2. テキスト差し替え
     el.innerHTML = html;
     
-    // 次フレームでフェードイン
+    // 3. フェードイン
     requestAnimationFrame(() => {
-      el.style.opacity = '30';
+      el.style.opacity = '1';
     });
   }
 
