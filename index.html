@@ -992,7 +992,7 @@
       let char = html.charAt(i); text += char;
       if (char === '<') isTag = true; if (char === '>') isTag = false;
       el.innerHTML = text; i++;
-      if (!isTag && char !== '>') await new Promise(r => setTimeout(r, 30));
+      if (!isTag && char !== '>') await new Promise(r => setTimeout(r, 20));
     }
   }
 
