@@ -5,7 +5,7 @@ on:
     # 1-5時間遅れる
     - cron: '19 10 * * 1-5'
       timezone: 'Asia/Tokyo'
-    - cron: '37 12 * * 1-5'
+    - cron: '47 12 * * 1-5'
       timezone: 'Asia/Tokyo'
   workflow_dispatch: # 手動実行用
 
