@@ -1001,10 +1001,10 @@
     if (currentTypewriterId !== id || isSecretaryClosed) return;
     
     // 1. まずフェードアウト
-    el.style.transition = 'opacity 0.15s ease-in-out';
+    el.style.transition = 'opacity 0.3s ease-in-out';
     el.style.opacity = '0';
     
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 300));
     if (currentTypewriterId !== id || isSecretaryClosed) return;
     
     // 2. テキスト差し替え
