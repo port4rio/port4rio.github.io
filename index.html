@@ -160,7 +160,7 @@
       <span id="ai-news-sort-btn" class="ai-news-toggle" onclick="toggleNewsSort()" style="margin-left: 4px;">⇅新着順</span>
       <span class="ai-news-toggle" onclick="toggleNewsSearch()" style="margin-left: 4px;">🔍</span>
     </span>
-    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼広</span>
+    <span id="ai-news-toggle" class="ai-news-toggle" onclick="toggleAINews()">▼広げる</span>
   </h2>
   
   <!-- ▼ 🔍タップで出現するスリム検索バー ▼ -->
@@ -790,11 +790,11 @@
     aiNewsState = (aiNewsState + 1) % 3;
     
     if (aiNewsState === 0) {
-      list.style.display = 'none'; toggle.innerText = '▼開';
+      list.style.display = 'none'; toggle.innerText = '▼開く';
     } else if (aiNewsState === 1) {
-      list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広';
+      list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広げる';
     } else {
-      list.style.display = 'block'; list.style.maxHeight = '80vh'; toggle.innerText = '▲閉';
+      list.style.display = 'block'; list.style.maxHeight = '80vh'; toggle.innerText = '▲閉じる';
     }
   }
 
@@ -831,7 +831,7 @@
           document.getElementById('ai-news-container').style.display = 'block';
           document.getElementById('ai-news-list').style.display = 'block';
           document.getElementById('ai-news-list').style.maxHeight = '35vh';
-          document.getElementById('ai-news-toggle').innerText = '▼広';
+          document.getElementById('ai-news-toggle').innerText = '▼広げる';
           aiNewsState = 1; 
         }
       }
