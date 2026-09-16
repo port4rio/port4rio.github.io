@@ -20,8 +20,8 @@ genai.configure(api_key=GEMINI_API_KEY)
 # 4段階のモデル優先度リスト
 MODEL_PRIORITY_LIST = [
     'gemini-3.8-flash',
-    'gemini-3.7-flash',
-    'gemini-3.6-flash',
+    #'gemini-3.7-flash',
+    #'gemini-3.6-flash',
     'gemini-3.5-flash-lite'
 ]
 
