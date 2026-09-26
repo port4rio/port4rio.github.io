@@ -259,7 +259,7 @@ if __name__ == "__main__":
                     existing_news = raw_json
             except: pass
 
-    limit_date = (today - datetime.timedelta(days=99)).strftime('%Y-%m-%d')
+    limit_date = (today - datetime.timedelta(days=799)).strftime('%Y-%m-%d')
     existing_news = [n for n in existing_news if isinstance(n, dict) and n.get('date', '') >= limit_date]
 
     processed_urls_today = {n.get('url') or n.get('pdf_url', '') for n in existing_news}
