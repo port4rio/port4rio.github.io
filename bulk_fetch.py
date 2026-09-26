@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     JST = datetime.timezone(datetime.timedelta(hours=9), 'JST')
     today = datetime.datetime.now(JST)
-    limit_date = (today - datetime.timedelta(days=99)).strftime('%Y-%m-%d')
+    limit_date = (today - datetime.timedelta(days=799)).strftime('%Y-%m-%d')
     
     combined = new_generated_news + existing_news
     final_news = []
