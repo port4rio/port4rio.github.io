@@ -242,7 +242,7 @@
     <span id="ai-secretary-text">読み込み中...</span>
     
     <div id="gemini-btn-area" style="display:none; margin-top: 10px; text-align: left; border-top: 1px dashed rgba(128,128,128,0.5); padding-top: 8px;">
-      <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #10a37f, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
+      <a id="gemini-consult-btn" href="#" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🍥 ChatGPTに相談</a>
     </div>
   </div>
 </div>
@@ -265,8 +265,6 @@
   let newsSortMode = 0; 
   let aiNewsState = 1; 
   let isFetchingPrices = false; 
-
-  // ▼ 保有数・買値が登録されている場合はデフォルトで閉じる ▼
   let isSecretaryClosed = portfolio.some(s => s.shares > 0 && s.price > 0); 
   
   let allNewsData = [];
@@ -490,7 +488,7 @@
     if (codeMatch && meigaraDict[codeMatch[1].toUpperCase()]) {
       code = codeMatch[1].toUpperCase();
       name = meigaraDict[code].shortName;
-    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) \vert{}\vert{} /^[A-Za-z]+$/.test(codeMatch[1]))) {
+    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) || /^[A-Za-z]+$/.test(codeMatch[1]))) {
       code = codeMatch[1].toUpperCase();
       name = code;
     } else {
@@ -798,11 +796,11 @@
     aiNewsState = (aiNewsState + 1) % 3;
     
     if (aiNewsState === 0) {
-      list.style.display = 'none'; toggle.innerText = '▼開';
+      list.style.display = 'none'; toggle.innerText = '▼開く';
     } else if (aiNewsState === 1) {
-      list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広';
+      list.style.display = 'block'; list.style.maxHeight = '35vh'; toggle.innerText = '▼広げる';
     } else {
-      list.style.display = 'block'; list.style.maxHeight = '80vh'; toggle.innerText = '▲閉';
+      list.style.display = 'block'; list.style.maxHeight = '80vh'; toggle.innerText = '▲閉じる';
     }
   }
 
@@ -839,7 +837,7 @@
           document.getElementById('ai-news-container').style.display = 'block';
           document.getElementById('ai-news-list').style.display = 'block';
           document.getElementById('ai-news-list').style.maxHeight = '35vh';
-          document.getElementById('ai-news-toggle').innerText = '▼広';
+          document.getElementById('ai-news-toggle').innerText = '▼広げる';
           aiNewsState = 1; 
         }
       }
@@ -1156,7 +1154,7 @@
       const geminiConsultBtn = document.getElementById('gemini-consult-btn');
       
       if (portfolio.length > 0) {
-        let prompt = `私の保有株ポートフォリオを分析し、今日知るべきニュース、資産を増やす戦略を教えてください。見やすい配当金カレンダーも。\n`;
+        let prompt = `私の保有株ポートフォリオを分析し、今日知るべきニュース、資産を増やす戦略を教えてください。配当金カレンダーも。\n`;
         prompt += `挨拶、前置きは不要です。回答の冒頭を必ず「あなたの [Port4rio]( https://port4rio.github.io ) を分析しました。」から始めてください。\n【保有株ポートフォリオ】\n`;
         portfolio.forEach(s => {
           const displayName = s.name || meigaraDict[s.code]?.shortName || s.code;
@@ -1188,7 +1186,7 @@
     }
   }
 
-  // ▼ 高速・最適化初期化処理 ▼
+  // ▼ 高速初期化処理 ▼
   async function init() {
     // 0. ローカルデータで画面の基礎枠組みを即時描画
     renderTiles();
