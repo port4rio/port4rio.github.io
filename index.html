@@ -265,6 +265,8 @@
   let newsSortMode = 0; 
   let aiNewsState = 1; 
   let isFetchingPrices = false; 
+
+  // ▼ 保有数・買値が登録されている場合はデフォルトで閉じる ▼
   let isSecretaryClosed = portfolio.some(s => s.shares > 0 && s.price > 0); 
   
   let allNewsData = [];
@@ -741,7 +743,7 @@
           </div>
           
           <div style="margin-top: 10px; text-align: right;">
-            <a href="${indConsultUrl}" target="_blank" rel="noopener" style="display: inline-block; padding: 5px 12px; background: linear-gradient(135deg, #10a37f, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">🍥 ChatGPTに相談</a>
+            <a href="${indConsultUrl}" target="_blank" rel="noopener" style="display: inline-block; padding: 5px 12px; background: linear-gradient(135deg, #1976d2, #8e24aa); color: #fff; text-decoration: none; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">🍥 ChatGPTに相談</a>
           </div>
         </div>`;
       grid.appendChild(tile);
@@ -1186,30 +1188,34 @@
     }
   }
 
-  // ▼ 高速初期化処理 ▼
+  // ▼ 完全同期待ち・高速初期化処理 ▼
   async function init() {
     // 0. ローカルデータで画面の基礎枠組みを即時描画
     renderTiles();
     
-    // 1. 【最優先】AI決算要約を最速で非同期読み込み・表示
+    // 1. 銘柄名辞書(jpx.csv)とAI決算要約(ai_news.json)を最優先で【完全並列ロード】
+    const dictTask = loadDictionary();
     const newsTask = loadAINews();
 
-    // 2. 辞書とスケジュールを並列でバックグラウンド取得
-    const backgroundTasks = Promise.all([
-      loadDictionary(),
-      fetch('schedule.json?t=' + new Date().getTime()).then(res => res.ok ? res.json() : {}).catch(() => ({}))
-    ]).then(([_, sched]) => {
-      upcomingSchedule = sched;
-      renderTiles(); // 辞書・スケジュール反映後にタイルのみ更新
-    });
+    // 辞書とAIニュースの両方が読み込み完了するのを待つ（並列処理のため超高速）
+    await Promise.all([dictTask, newsTask]);
 
-    // AI要約の読み込み完了を確実に優先
-    await newsTask;
+    // 辞書データが完全に揃った状態でAI決算要約と保有株タイルを確実に再描画（これで企業名表示を保証）
+    sortAndRenderNews(false);
+    renderTiles();
+
+    // 2. 決算スケジュールをバックグラウンド取得
+    fetch('schedule.json?t=' + new Date().getTime())
+      .then(res => res.ok ? res.json() : {})
+      .then(sched => {
+        upcomingSchedule = sched;
+        renderTiles();
+      }).catch(() => {});
 
     // 3. 【第二優先】株価と市況のリアルタイム取得
     await refreshAllPrices(false);
 
-    // 4. 【第三優先】全データが揃ったらAI秘書のセリフを最終更新（非表示設定なら枠だけ配置）
+    // 4. 【第三優先】全データが揃ったらAI秘書のセリフを最終更新
     updateAISecretary(secLastVal, secLastProf);
   }
 
