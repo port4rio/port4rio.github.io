@@ -17,12 +17,12 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-# 4段階のモデル優先度リスト
+# モデル優先度リスト（lite版優先設定）
 MODEL_PRIORITY_LIST = [
-    'gemini-3.8-flash',
-    #'gemini-3.7-flash',
-    #'gemini-3.6-flash',
-    'gemini-3.5-flash-lite'
+    'gemini-3.5-flash-lite',  # 第一優先
+    'gemini-3.1-flash-lite',  # 予備（第二優先）
+    'gemini-3.8-flash',       # フォールバック用
+    'gemini-3.7-flash'        # フォールバック用
 ]
 
 # 本日上限（429）に達したモデルを記憶するセット（当日の処理中で共有）
@@ -146,7 +146,7 @@ def get_tdnet_pdfs(target_codes):
 # ==========================================
 def generate_ai_summary(request_contents):
     """
-    4段階の優先モデルリストに沿ってAI要約を試行。
+    優先モデルリストに沿ってAI要約を試行。
     本日の上限(429)に達したモデルは即座にブラックリスト化し、0秒で次モデルへフォールバックします。
     """
     for current_model_name in MODEL_PRIORITY_LIST:
