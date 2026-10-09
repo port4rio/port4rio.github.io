@@ -501,7 +501,7 @@
     if (codeMatch && meigaraDict[codeMatch[1].toUpperCase()]) {
       code = codeMatch[1].toUpperCase();
       name = meigaraDict[code].shortName;
-    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) \vert{}\vert{} /^[A-Za-z]+$/.test(codeMatch[1]))) {
+    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) || /^[A-Za-z]+$/.test(codeMatch[1]))) {
       code = codeMatch[1].toUpperCase();
       name = code;
     } else {
