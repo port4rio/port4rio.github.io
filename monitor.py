@@ -5,7 +5,8 @@ import time
 import re
 import requests
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # ==========================================
 # 0. APIと日本時間（JST）およびモデル優先度の設定
@@ -15,7 +16,8 @@ if not GEMINI_API_KEY:
     print("エラー: GEMINI_API_KEYが設定されていません。")
     exit(1)
 
-genai.configure(api_key=GEMINI_API_KEY)
+# 新SDKのクライアント初期化
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # モデル優先度リスト（lite版優先設定）
 MODEL_PRIORITY_LIST = [
@@ -142,7 +144,7 @@ def get_tdnet_pdfs(target_codes):
     return found_pdfs
 
 # ==========================================
-# 3. 高速フォールバック対応 Gemini生成関数
+# 3. 新SDK＆高速フォールバック対応 Gemini生成関数
 # ==========================================
 def generate_ai_summary(request_contents):
     """
@@ -156,12 +158,12 @@ def generate_ai_summary(request_contents):
 
         print(f"  🤖 試行中モデル: [{current_model_name}]")
         try:
-            active_model = genai.GenerativeModel(current_model_name)
             for attempt in range(2):
                 try:
-                    response = active_model.generate_content(
-                        request_contents,
-                        request_options={"timeout": 120} # タイムアウトも2分に短縮
+                    # 新SDK（google.genai）のAPI呼び出し方式
+                    response = client.models.generate_content(
+                        model=current_model_name,
+                        contents=request_contents
                     )
                     if response and response.text:
                         return response.text.strip(), current_model_name
@@ -170,7 +172,7 @@ def generate_ai_summary(request_contents):
                     
                     # ▼ 1日上限エラー(Quota exceeded / 429)を検知した場合
                     if "429" in err_msg and ("quota" in err_msg.lower() or "limit: 20" in err_msg.lower()):
-                        print(f"    ⛔ [{current_model_name}] 本日の1日上限(20回)に達しました。本処理内では即スキップします。")
+                        print(f"    ⛔ [{current_model_name}] 本日の1日上限に達しました。本処理内では即スキップします。")
                         EXHAUSTED_MODELS.add(current_model_name)
                         break # リトライせず直ちに次のモデルへ切り替え
                     
@@ -205,10 +207,11 @@ def summarize_pdfs(pdf_list, target_date_str):
                 print(f"＞ ❌ [{item['code']}] PDF取得失敗")
                 continue
 
-            doc_part = {
-                "mime_type": "application/pdf",
-                "data": res.content
-            }
+            # 新SDK（google.genai）でのPDFバイナリ構造体作成
+            doc_part = types.Part.from_bytes(
+                data=res.content,
+                mime_type="application/pdf"
+            )
             
             base_prompt = os.environ.get("SECRET_PROMPT", "要約を作成してください。")
             request_contents = [base_prompt, doc_part]
