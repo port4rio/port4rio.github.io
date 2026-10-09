@@ -17,16 +17,16 @@ jobs:
 
     steps:
     - name: リポジトリの取得
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: Pythonのセットアップ
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
     - name: ライブラリのインストール
       run: |
-        pip install requests beautifulsoup4 pypdf google-generativeai
+        pip install requests beautifulsoup4 pypdf google-genai
 
     - name: スクリプトの実行
       env:
