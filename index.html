@@ -265,8 +265,6 @@
   let newsSortMode = 0; 
   let aiNewsState = 1; 
   let isFetchingPrices = false; 
-
-  // ▼ 保有数・買値が登録されている場合はデフォルトで閉じる ▼
   let isSecretaryClosed = portfolio.some(s => s.shares > 0 && s.price > 0); 
   
   let allNewsData = [];
@@ -334,6 +332,16 @@
 
   document.addEventListener('click', e => { if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) suggestBox.style.display = 'none'; });
 
+  // ▼ 画面上のニュースカード社名を瞬時に書き換える関数 ▼
+  function updateNewsStockNames() {
+    document.querySelectorAll('.news-stock-name').forEach(el => {
+      const code = el.getAttribute('data-code');
+      if (code && meigaraDict[code]?.shortName) {
+        el.innerText = meigaraDict[code].shortName;
+      }
+    });
+  }
+
   async function loadDictionary() {
     try {
       const response = await fetch('jpx.csv');
@@ -353,6 +361,9 @@
           searchShortName: normalizeForSearch(cols[2] || cols[1] || '') 
         };
       }
+      // 辞書完了時に画面上の社名を瞬時に一括置換
+      updateNewsStockNames();
+      renderTiles();
     } catch (e) {}
   }
 
@@ -490,7 +501,7 @@
     if (codeMatch && meigaraDict[codeMatch[1].toUpperCase()]) {
       code = codeMatch[1].toUpperCase();
       name = meigaraDict[code].shortName;
-    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) || /^[A-Za-z]+$/.test(codeMatch[1]))) {
+    } else if (codeMatch && (/^\d{4}$/.test(codeMatch[1]) \vert{}\vert{} /^[A-Za-z]+$/.test(codeMatch[1]))) {
       code = codeMatch[1].toUpperCase();
       name = code;
     } else {
@@ -944,7 +955,7 @@
           <div class="ai-news-title" style="line-height: 1.4;">
             <span style="color: #7f8c8d; font-size: 0.85em; margin-right: 4px;">${shortDate}</span>
             ${badgeHtml}
-            <span style="font-weight: bold; margin-right: 4px;">${stockName}</span>
+            <span class="news-stock-name" data-code="${item.code}" style="font-weight: bold; margin-right: 4px;">${stockName}</span>
             ${arrowHtml}
             <span style="font-weight: bold;">${displayTitle}</span>
           </div>
@@ -1188,23 +1199,18 @@
     }
   }
 
-  // ▼ 完全同期待ち・高速初期化処理 ▼
+  // ▼ 高速初期化処理（AI要約最優先＆辞書完了時に社名瞬時差し替え） ▼
   async function init() {
-    // 0. ローカルデータで画面の基礎枠組みを即時描画
+    // 0. ローカルデータで画面の基礎枠組みを描画
     renderTiles();
     
-    // 1. 銘柄名辞書(jpx.csv)とAI決算要約(ai_news.json)を最優先で【完全並列ロード】
-    const dictTask = loadDictionary();
-    const newsTask = loadAINews();
+    // 1. 【最優先】AI要約を即取得・画面表示（辞書が未ロードでも即画面出力）
+    loadAINews();
 
-    // 辞書とAIニュースの両方が読み込み完了するのを待つ（並列処理のため超高速）
-    await Promise.all([dictTask, newsTask]);
+    // 2. 辞書をバックグラウンド取得（ロード完了した瞬間に画面上のコード番号を社名へ一括差し替え）
+    loadDictionary();
 
-    // 辞書データが完全に揃った状態でAI決算要約と保有株タイルを確実に再描画（これで企業名表示を保証）
-    sortAndRenderNews(false);
-    renderTiles();
-
-    // 2. 決算スケジュールをバックグラウンド取得
+    // 3. 決算スケジュール取得
     fetch('schedule.json?t=' + new Date().getTime())
       .then(res => res.ok ? res.json() : {})
       .then(sched => {
@@ -1212,10 +1218,10 @@
         renderTiles();
       }).catch(() => {});
 
-    // 3. 【第二優先】株価と市況のリアルタイム取得
+    // 4. 株価と市況のリアルタイム取得
     await refreshAllPrices(false);
 
-    // 4. 【第三優先】全データが揃ったらAI秘書のセリフを最終更新
+    // 5. 全データが揃ったらAI秘書のセリフを最終更新
     updateAISecretary(secLastVal, secLastProf);
   }
 
